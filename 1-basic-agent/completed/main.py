@@ -1,5 +1,3 @@
-import os, sys
-# from dotenv import load_dotenv
 import asyncio
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
@@ -26,12 +24,10 @@ if __name__ == "__main__":
             agent_name=agent_name,
             source=agent_name
         ):  
-            #print (event)
             if event.get("event_type") == "text_chunk":
                 full_text += event.get("data", "")
-
+        
         response = {"text": full_text}
-
         print (f'\nResponse: {response["text"]}')
     
     asyncio.run(run_streaming())

@@ -1,4 +1,3 @@
-import os, sys
 import asyncio
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
@@ -20,7 +19,6 @@ if __name__ == "__main__":
     user_input = "Hello world 를 프린팅하는 파이썬 코드를 작성하고 실행시켜 줄래?"
 
     async def run_streaming():
-        full_text = ""
         async for event in strands_utils.process_streaming_response_yield(
             agent=agent,
             message=user_input,
@@ -29,11 +27,4 @@ if __name__ == "__main__":
         ):
             strands_utils.process_event_for_display(event)
 
-            if event.get("event_type") == "text_chunk":
-                full_text += event.get("data", "")
-            
-        response = {"text": full_text}
-
-        print (f'\nResponse: {response["text"]}')
-    
     asyncio.run(run_streaming())

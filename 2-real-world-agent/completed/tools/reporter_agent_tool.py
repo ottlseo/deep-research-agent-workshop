@@ -3,16 +3,16 @@ import logging
 import asyncio
 from typing import Any, Annotated
 from strands.types.tools import ToolResult, ToolUse
-from src.utils.strands_sdk_utils import strands_utils
-from src.prompts.template import apply_prompt_template
-from src.utils.common_utils import get_message_from_string
+from utils.strands_sdk_utils import strands_utils
+from prompts.template import apply_prompt_template
+from utils.common_utils import get_message_from_string
 
-from src.tools import python_repl_tool, bash_tool
+from tools import python_repl_tool, bash_tool
 from strands_tools import file_read
 
 # Observability
 from opentelemetry import trace
-from src.utils.agentcore_observability import add_span_event
+from utils.agentcore_observability import add_span_event
 
 # Simple logger setup
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ def handle_reporter_agent_tool(_task: Annotated[str, "The reporting task or inst
         logger.info(f"\n{Colors.GREEN}Reporter Agent Tool starting{Colors.END}")
         
         # Try to extract shared state from global storage
-        from src.graph.nodes import _global_node_states
+        from graph.nodes import _global_node_states
         shared_state = _global_node_states.get('shared', None)
         
         if not shared_state:

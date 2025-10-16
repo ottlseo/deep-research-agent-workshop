@@ -7,18 +7,18 @@ import shutil
 import asyncio
 import argparse
 from dotenv import load_dotenv
-from src.utils.strands_sdk_utils import strands_utils
-from src.graph.builder import build_graph
+from utils.strands_sdk_utils import strands_utils
+from graph.builder import build_graph
 
 # Load environment variables
 load_dotenv()
 
 # Observability
 from opentelemetry import trace, context
-from src.utils.agentcore_observability import set_session_context, add_span_event
+from utils.agentcore_observability import set_session_context, add_span_event
 
 # Import event queue for unified event processing
-from src.utils.event_queue import clear_queue 
+from utils.event_queue import clear_queue 
 
 def remove_artifact_folder(folder_path="./artifacts/"): # ./artifact/ 폴더가 존재하면 삭제하는 함수
     if os.path.exists(folder_path):
@@ -38,7 +38,7 @@ def _setup_execution(): # Initialize execution environment
 
 def _print_conversation_history(): # Print final conversation history
     print("\n=== Conversation History ===")
-    from src.graph.nodes import _global_node_states
+    from graph.nodes import _global_node_states
     shared_state = _global_node_states.get('shared', {})
     history = shared_state.get('history', [])
 
