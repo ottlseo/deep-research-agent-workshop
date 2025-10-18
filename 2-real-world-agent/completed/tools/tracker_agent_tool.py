@@ -2,9 +2,9 @@ import logging
 import asyncio
 from typing import Any, Annotated
 from strands.types.tools import ToolResult, ToolUse
-from src.utils.strands_sdk_utils import strands_utils
-from src.prompts.template import apply_prompt_template
-from src.utils.common_utils import get_message_from_string
+from utils.strands_sdk_utils import strands_utils
+from prompts.template import apply_prompt_template
+from utils.common_utils import get_message_from_string
 
 # Simple logger setup
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ def handle_tracker_agent_tool(completed_agent: Annotated[str, "The name of the a
     logger.info(f"\n{Colors.GREEN}Tracker Agent Tool starting{Colors.END}")
     
     # Try to extract shared state from global storage
-    from src.graph.nodes import _global_node_states
+    from graph.nodes import _global_node_states
     shared_state = _global_node_states.get('shared', None)
     
     if not shared_state:

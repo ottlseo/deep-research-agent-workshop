@@ -1,12 +1,12 @@
 
 import os
 import logging
-from src.utils.strands_sdk_utils import strands_utils
-from src.prompts.template import apply_prompt_template
-from src.utils.common_utils import get_message_from_string
+from utils.strands_sdk_utils import strands_utils
+from prompts.template import apply_prompt_template
+from utils.common_utils import get_message_from_string
 
 # Tools
-from src.tools import coder_agent_tool, reporter_agent_tool, tracker_agent_tool, validator_agent_tool
+from tools import coder_agent_tool, reporter_agent_tool, tracker_agent_tool, validator_agent_tool
 
 # Simple logger setup
 logger = logging.getLogger(__name__)

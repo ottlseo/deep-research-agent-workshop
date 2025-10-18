@@ -3,7 +3,7 @@ import logging
 import traceback
 import asyncio
 from datetime import datetime
-from src.utils.bedrock import bedrock_info
+from utils.bedrock import bedrock_info
 from strands import Agent
 from strands.models import BedrockModel
 from botocore.config import Config
@@ -255,7 +255,7 @@ class strands_utils():
         Yields:
             AgentCore formatted events
         """
-        from src.utils.event_queue import put_event
+        from utils.event_queue import put_event
 
         session_id = "ABC"
 

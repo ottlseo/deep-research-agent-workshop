@@ -1,5 +1,3 @@
-import os, sys
-# from dotenv import load_dotenv
 import asyncio
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
@@ -19,20 +17,13 @@ if __name__ == "__main__":
     user_input = "안녕 만나서 반가워. 나는 지금 Strands Agents SDK 공부중이야."
 
     async def run_streaming():
-        full_text = ""
         async for event in strands_utils.process_streaming_response_yield(
             agent=agent,
             message=user_input,
             agent_name=agent_name,
             source=agent_name
-        ):
+        ):  
             strands_utils.process_event_for_display(event)
-
-            if event.get("event_type") == "text_chunk":
-                full_text += event.get("data", "")
-            
-        response = {"text": full_text}
-
-        print (f'\nResponse: {response["text"]}')
     
     asyncio.run(run_streaming())
+    

@@ -1,8 +1,8 @@
 
 import asyncio
 from strands.multiagent import GraphBuilder
-from src.utils.strands_sdk_utils import FunctionNode
-from src.utils.event_queue import has_events, get_event
+from utils.strands_sdk_utils import FunctionNode
+from utils.event_queue import has_events, get_event
 from .nodes import (
     supervisor_node,
     coordinator_node,
