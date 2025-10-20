@@ -3,7 +3,7 @@ import logging
 import subprocess
 from typing import Any, Annotated
 from strands.types.tools import ToolResult, ToolUse
-from src.tools.decorators import log_io
+from tools.decorators import log_io
 
 
 # Simple logger setup
