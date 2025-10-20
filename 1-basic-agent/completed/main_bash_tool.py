@@ -16,7 +16,7 @@ agent = strands_utils.get_agent(
 )
 
 if __name__ == "__main__":
-    user_input = "./prompts 디렉토리 조회해 주세요"
+    user_input = "./1-basic-agent 디렉토리 조회해 주세요"
 
     async def run_streaming():
         async for event in strands_utils.process_streaming_response_yield(

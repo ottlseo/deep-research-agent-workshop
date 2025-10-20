@@ -7,7 +7,6 @@ from tools.decorators import log_io
 
 # Observability
 from opentelemetry import trace
-from utils.agentcore_observability import add_span_event
 
 # Simple logger setup
 logger = logging.getLogger(__name__)
@@ -54,10 +53,6 @@ def handle_bash_tool(cmd: Annotated[str, "The bash command to be executed."]):
             # Return stdout as the result
             results = "||".join([cmd, result.stdout])
 
-            # Add Event
-            add_span_event(span, "command", {"cmd": str(cmd)})
-            add_span_event(span, "result", {"response": str(result.stdout)})
-
             return results + "\n"
             
         except subprocess.CalledProcessError as e:
@@ -65,20 +60,12 @@ def handle_bash_tool(cmd: Annotated[str, "The bash command to be executed."]):
             error_message = f"Command failed with exit code {e.returncode}.\nStdout: {e.stdout}\nStderr: {e.stderr}"
             logger.error(f"{Colors.RED}Command failed: {e.returncode}{Colors.END}")
 
-            # Add Event
-            add_span_event(span, "code", {"code": str(cmd)})
-            add_span_event(span, "result", {"response": repr(e)})
-
             return error_message
         
         except Exception as e:
             # Catch any other exceptions
             error_message = f"Error executing command: {str(e)}"
             logger.error(f"{Colors.RED}Error: {str(e)}{Colors.END}")
-
-            # Add Event
-            add_span_event(span, "code", {"code": str(cmd)})
-            add_span_event(span, "result", {"response": repr(e)})
 
             return error_message
 
