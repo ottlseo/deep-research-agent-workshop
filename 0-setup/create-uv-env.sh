@@ -207,18 +207,18 @@ for file in pyproject.toml .venv uv.lock; do
 done
 
 # 심링크 생성
-ln -s setup/pyproject.toml . || {
+ln -s 0-setup/pyproject.toml . || {
     print_error "pyproject.toml 심링크 생성 실패"
     exit 1
 }
 
-ln -s setup/.venv . || {
+ln -s 0-setup/.venv . || {
     print_error ".venv 심링크 생성 실패"
     exit 1
 }
 
-if [ -f "setup/uv.lock" ]; then
-    ln -s setup/uv.lock . || {
+if [ -f "0-setup/uv.lock" ]; then
+    ln -s 0-setup/uv.lock . || {
         print_warning "uv.lock 심링크 생성 실패"
     }
 fi
@@ -237,7 +237,7 @@ echo "5. Jupyter Lab 실행: uv run jupyter lab"
 echo "6. 새 노트북 생성 시 '$DISPLAY_NAME' 커널 선택"
 echo ""
 echo "=== 파일 정보 ==="
-echo "- pyproject.toml: 프로젝트 설정 및 의존성 (setup/에서 관리, 루트에는 심링크)"
+echo "- pyproject.toml: 프로젝트 설정 및 의존성 (0-setup/에서 관리, 루트에는 심링크)"
 echo "- uv.lock: 정확한 버전 락 파일 (버전 관리에 포함 권장)"
 echo "- .venv/: 가상 환경 디렉토리 (버전 관리에서 제외)"
 echo ""

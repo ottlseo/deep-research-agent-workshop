@@ -1,0 +1,465 @@
+{
+  "calculations": [
+    {
+      "id": "calc_total_001",
+      "value": "10000000000",
+      "description": "총 광고비용",
+      "formula": "SUM(광고비용)",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_total_002",
+      "value": "8695000415",
+      "description": "총 매출액",
+      "formula": "SUM(매출액)",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_total_003",
+      "value": 0.8695000415,
+      "description": "전체 ROAS",
+      "formula": "총 매출액 / 총 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_total_004",
+      "value": 3.5198857247049222,
+      "description": "전체 CTR",
+      "formula": "총 클릭수 / 총 노출수 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "클릭수",
+        "노출수"
+      ],
+      "importance": "medium",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_total_005",
+      "value": 8.21529907270816,
+      "description": "전체 전환율",
+      "formula": "총 전환수 / 총 클릭수 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "전환수",
+        "클릭수"
+      ],
+      "importance": "medium",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_media_roas_0",
+      "value": 0.8499999640000144,
+      "description": "네이바 매체 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_media_cost_ratio_0",
+      "value": 25.00001,
+      "description": "네이바 매체 광고비용 비중",
+      "formula": "매체별 광고비용 / 총 광고비용 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "광고비용"
+      ],
+      "importance": "medium",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_media_roas_1",
+      "value": 0.979999939333576,
+      "description": "아마존 매체 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_media_cost_ratio_1",
+      "value": 15.000060000000001,
+      "description": "아마존 매체 광고비용 비중",
+      "formula": "매체별 광고비용 / 총 광고비용 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "광고비용"
+      ],
+      "importance": "medium",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_media_roas_2",
+      "value": 0.849999952999859,
+      "description": "컬삼 매체 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_media_cost_ratio_2",
+      "value": 19.99994,
+      "description": "컬삼 매체 광고비용 비중",
+      "formula": "매체별 광고비용 / 총 광고비용 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "광고비용"
+      ],
+      "importance": "medium",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_media_roas_3",
+      "value": 0.8499999774999943,
+      "description": "쿠빵 매체 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_media_cost_ratio_3",
+      "value": 39.999990000000004,
+      "description": "쿠빵 매체 광고비용 비중",
+      "formula": "매체별 광고비용 / 총 광고비용 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "광고비용"
+      ],
+      "importance": "medium",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_category_roas_0",
+      "value": 0.29740750957044554,
+      "description": "간편식 카테고리 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_category_cost_ratio_0",
+      "value": 34.0632,
+      "description": "간편식 카테고리 광고비용 비중",
+      "formula": "카테고리별 광고비용 / 총 광고비용 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "광고비용"
+      ],
+      "importance": "medium",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_category_roas_1",
+      "value": 1.355835449510444,
+      "description": "건강식품 카테고리 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_category_cost_ratio_1",
+      "value": 31.604159999999997,
+      "description": "건강식품 카테고리 광고비용 비중",
+      "formula": "카테고리별 광고비용 / 총 광고비용 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "광고비용"
+      ],
+      "importance": "medium",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_category_roas_2",
+      "value": 0.9894174228955304,
+      "description": "신선식품 카테고리 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_category_cost_ratio_2",
+      "value": 34.33264,
+      "description": "신선식품 카테고리 광고비용 비중",
+      "formula": "카테고리별 광고비용 / 총 광고비용 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "광고비용"
+      ],
+      "importance": "medium",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_product_roas_1",
+      "value": 2.280506162848917,
+      "description": "샐러드키트 상품 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_product_roas_4",
+      "value": 2.2154907223517566,
+      "description": "프로틴바 상품 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_product_roas_2",
+      "value": 0.47752257485075905,
+      "description": "오메가3 상품 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_product_roas_3",
+      "value": 0.3139661725613922,
+      "description": "즉석밥세트 상품 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_product_roas_0",
+      "value": 0.2740029693899891,
+      "description": "냉동만두 상품 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_product_roas_5",
+      "value": 0.10035176848495043,
+      "description": "프리미엄과일 상품 ROAS",
+      "formula": "매출액 / 광고비용",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "광고비용"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_segment_sales_ratio_2",
+      "value": 32.46013274629614,
+      "description": "30대-남성 세그먼트 매출 비중",
+      "formula": "세그먼트별 매출액 / 총 매출액 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "주요구매연령",
+        "주요구매성별"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_segment_sales_ratio_4",
+      "value": 25.99514624635012,
+      "description": "40대-남성 세그먼트 매출 비중",
+      "formula": "세그먼트별 매출액 / 총 매출액 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "주요구매연령",
+        "주요구매성별"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_segment_sales_ratio_6",
+      "value": 17.01062141927454,
+      "description": "50대-남성 세그먼트 매출 비중",
+      "formula": "세그먼트별 매출액 / 총 매출액 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "주요구매연령",
+        "주요구매성별"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_segment_sales_ratio_0",
+      "value": 9.15462161021645,
+      "description": "20대-남성 세그먼트 매출 비중",
+      "formula": "세그먼트별 매출액 / 총 매출액 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "주요구매연령",
+        "주요구매성별"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_segment_sales_ratio_1",
+      "value": 5.040096803721659,
+      "description": "20대-여성 세그먼트 매출 비중",
+      "formula": "세그먼트별 매출액 / 총 매출액 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "주요구매연령",
+        "주요구매성별"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_segment_sales_ratio_3",
+      "value": 3.6695247127253876,
+      "description": "30대-여성 세그먼트 매출 비중",
+      "formula": "세그먼트별 매출액 / 총 매출액 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "주요구매연령",
+        "주요구매성별"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_segment_sales_ratio_5",
+      "value": 3.519945294907729,
+      "description": "40대-여성 세그먼트 매출 비중",
+      "formula": "세그먼트별 매출액 / 총 매출액 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "주요구매연령",
+        "주요구매성별"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    },
+    {
+      "id": "calc_segment_sales_ratio_7",
+      "value": 3.149911166507978,
+      "description": "50대-여성 세그먼트 매출 비중",
+      "formula": "세그먼트별 매출액 / 총 매출액 * 100",
+      "source_file": "./data/yummy-food-market.csv",
+      "source_columns": [
+        "매출액",
+        "주요구매연령",
+        "주요구매성별"
+      ],
+      "importance": "high",
+      "timestamp": "2025-10-21 07:24:51",
+      "verification_notes": ""
+    }
+  ]
+}

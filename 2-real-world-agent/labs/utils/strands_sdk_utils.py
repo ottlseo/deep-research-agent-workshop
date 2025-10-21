@@ -3,12 +3,12 @@ import logging
 import traceback
 import asyncio
 from datetime import datetime
-from src.utils.bedrock import bedrock_info
+from utils.bedrock import bedrock_info
 from strands import Agent
 from strands.models import BedrockModel
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain_core.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from strands.types.exceptions import EventLoopException
 
 from strands.agent.agent_result import AgentResult
@@ -255,7 +255,7 @@ class strands_utils():
         Yields:
             AgentCore formatted events
         """
-        from src.utils.event_queue import put_event
+        from utils.event_queue import put_event
 
         session_id = "ABC"
 
@@ -446,7 +446,6 @@ class FunctionNode(MultiAgentBase):
             results={self.name: NodeResult(result=agent_result)}
         )
 
-
 class ConversationEditor(SlidingWindowConversationManager):
 
     """
@@ -479,4 +478,4 @@ class ConversationEditor(SlidingWindowConversationManager):
         # 부모 클래스의 reduce_context는 should_truncate_results를 자동으로 처리
         super().reduce_context(agent, e, **kwargs)
 
-        print(f"✅ Cleanup complete: {len(agent.messages)} messages remaining")
+        print(f"✅ Cleanup complete: {len(agent.messages)} messages remaining")ㅈ
