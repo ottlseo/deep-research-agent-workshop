@@ -5,6 +5,9 @@
 
 set -e  # 에러 발생 시 스크립트 중단
 
+# 스크립트 디렉토리 저장 (나중에 사용하기 위해)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # 색상 정의
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -133,10 +136,10 @@ uv add ipykernel jupyter
 # 4. pyproject.toml 확인 및 의존성 설치
 if [ -f "pyproject.toml" ]; then
     print_info "pyproject.toml 발견. 의존성 동기화 중..."
-    
+
     # pyproject.toml의 의존성을 기반으로 환경 동기화
     uv sync
-    
+
     print_success "pyproject.toml 기반으로 의존성이 설치되었습니다."
     print_info "락 파일이 자동으로 생성/업데이트되었습니다: uv.lock"
 else
@@ -144,12 +147,17 @@ else
     exit 1
 fi
 
-sh install_korean_font.sh
+# 한글 폰트 및 시스템 패키지 설치 (절대 경로 사용)
+if [ -f "$SCRIPT_DIR/install_korean_font.sh" ]; then
+    print_info "한글 폰트 설치 중..."
+    sh "$SCRIPT_DIR/install_korean_font.sh"
+else
+    print_warning "install_korean_font.sh를 찾을 수 없습니다. 건너뜁니다."
+fi
+
+print_info "시스템 패키지 설치 중..."
 sudo apt-get update
-sudo apt-get install pandoc -y
-sudo apt-get install texlive -y
-sudo apt-get install texlive-xetex -y
-sudo apt-get install poppler-utils -y
+sudo apt-get install -y pandoc texlive texlive-xetex poppler-utils
 
 # 5. Jupyter 커널 등록
 print_info "Jupyter 커널 등록 중..."
