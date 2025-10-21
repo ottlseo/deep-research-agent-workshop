@@ -5,7 +5,6 @@ from typing import Any, Annotated
 from strands.types.tools import ToolResult, ToolUse
 from tools.decorators import log_io
 
-
 # Simple logger setup
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

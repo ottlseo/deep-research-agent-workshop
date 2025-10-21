@@ -1,0 +1,347 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yummy Food 소비자 구매 패턴 및 광고 효과 분석 보고서</title>
+    <style>
+        /* Korean font configuration */
+        body {
+            font-family: 'NanumGothic', 'NanumBarunGothic', 'Malgun Gothic', 'DejaVu Sans', sans-serif;
+            margin: 0.8cm 0.7cm;
+            line-height: 1.6;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        /* Typography hierarchy */
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            color: #2c5aa0;
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        /* Table typography */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        th {
+            font-size: 14px;
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+
+        td {
+            font-size: 13px;
+        }
+
+        /* Image captions */
+        .image-caption {
+            font-size: 12px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        /* Citations */
+        .citation {
+            font-size: 0.9em;
+            color: #2196f3;
+            font-weight: bold;
+        }
+
+        /* Status indicators */
+        .status-positive { color: #27ae60; font-weight: bold; }
+        .status-negative { color: #e74c3c; font-weight: bold; }
+
+        /* Image container layout */
+        .image-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .image-container img {
+            width: 80%;
+            max-height: 350px;
+            object-fit: contain;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Main section classes */
+        .executive-summary {
+            background: linear-gradient(135deg, #e3f2fd 0%, #e8f4f8 100%);
+            padding: 20px 25px;
+            border-left: 6px solid #2196f3;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .key-findings {
+            background: linear-gradient(135deg, #fff3e0 0%, #fff2e6 100%);
+            padding: 20px 25px;
+            border-left: 6px solid #ff9800;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .business-proposals {
+            background: linear-gradient(135deg, #f3e5f5 0%, #fce4ec 100%);
+            padding: 20px 25px;
+            border-left: 6px solid #9c27b0;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .detailed-analysis {
+            background-color: #fafbfc;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .metric-highlight {
+            background: linear-gradient(135deg, #e8f5e8 0%, #f0fff0 100%);
+            border-left: 5px solid #27ae60;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        .data-insight {
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
+            border-left: 5px solid #e74c3c;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+        }
+        
+        .cover-page {
+            text-align: center;
+            margin: 100px auto;
+        }
+        
+        .cover-page h1 {
+            font-size: 28px;
+            margin-bottom: 30px;
+        }
+        
+        .cover-page .subtitle {
+            font-size: 18px;
+            color: #7f8c8d;
+            margin-bottom: 60px;
+        }
+        
+        .cover-page .date {
+            font-size: 16px;
+            margin-top: 60px;
+        }
+        
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+<body>
+    <!-- 표지 -->
+    <div class="cover-page">
+        <h1>Yummy Food 소비자 구매 패턴 및 광고 효과 분석 보고서</h1>
+        <div class="subtitle">마케팅 전략 최적화를 위한 데이터 분석</div>
+        <div class="image-container">
+            <img src="./artifacts/media_roas_cost_ratio.png" style="width: 60%; max-height: 250px;" />
+        </div>
+        <div class="date">2025년 10월 21일</div>
+    </div>
+    
+    <div class="page-break"></div>
+    
+    <!-- 목차 -->
+    <h2>목차</h2>
+    <ol>
+        <li>개요 (Executive Summary)</li>
+        <li>주요 발견사항 (Key Findings)</li>
+        <li>상세 분석 (Detailed Analysis)
+            <ul>
+                <li>매체별 광고 성과 분석</li>
+                <li>카테고리별 광고 성과 분석</li>
+                <li>상품별 인기도 분석</li>
+                <li>소비자 세그먼트 분석</li>
+                <li>광고 매체와 구매 전환 간의 상관관계 분석</li>
+            </ul>
+        </li>
+        <li>결론 및 제안사항 (Conclusions and Recommendations)</li>
+    </ol>
+    
+    <div class="page-break"></div>
+
+    <!-- 개요 (Executive Summary) -->
+    <div class="executive-summary">
+        <h2>개요 (Executive Summary)</h2>
+        <p>100억원의 광고 집행 예산을 4개의 매체(쿠빵, 네이바, 아마존, 컬삼)에 30일동안 3개 카테고리(간편식, 건강식품, 신선식품)에 대하여 광고를 집행한 결과입니다. 종합해보면, 전체 ROAS는 0.87로 나타났으며, 건강식품 카테고리가 ROAS 1.36으로 가장 높은 성과를 보였습니다. 특히 프로틴바 상품이 ROAS 3.33으로 최고 성과 상품으로 분석되었으며, 30대 남성 세그먼트가 전체 매출의 32.5%를 차지하며 가장 중요한 소비자 그룹으로 확인되었습니다.</p>
+        
+        <div class="metric-highlight">
+            총 광고 집행 예산: 10,000,000,000원<br>
+            총 매출액: 8,695,000,415원<br>
+            전체 ROAS: 0.87
+        </div>
+        
+        <p>본 보고서는 Yummy Food의 소비자 구매 패턴과 광고 효과를 종합적으로 분석하여, 향후 마케팅 전략 수립에 필요한 인사이트를 제공합니다.</p>
+    </div>
+
+    <!-- 주요 발견사항 (Key Findings) -->
+    <div class="key-findings">
+        <h2>주요 발견사항 (Key Findings)</h2>
+        
+        <h3>1. 매체별 성과</h3>
+        <div class="image-container">
+            <img src="./artifacts/media_roas.png"/>
+            <div class="image-caption">매체별 ROAS 비교</div>
+        </div>
+        <p>아마존이 ROAS 0.98로 가장 높은 광고 효율성을 보였으며, 다른 매체들(쿠빵, 네이바, 컬삼)은 모두 0.85의 ROAS를 기록했습니다. 아마존은 전환율도 12.73%로 가장 높아 광고 효율성 측면에서 가장 우수한 매체로 분석되었습니다.</p>
+        
+        <h3>2. 카테고리별 성과</h3>
+        <div class="image-container">
+            <img src="./artifacts/category_roas.png"/>
+            <div class="image-caption">카테고리별 ROAS 비교</div>
+        </div>
+        <p>건강식품 카테고리가 ROAS 1.36으로 가장 높은 성과를 보였으며, 신선식품(0.99)과 간편식(0.30) 순으로 나타났습니다. 건강식품은 투자 대비 수익이 가장 높은 카테고리로, 마케팅 예산 배분 시 우선순위를 두어야 할 영역입니다.</p>
+        
+        <h3>3. 상품별 인기도</h3>
+        <div class="image-container">
+            <img src="./artifacts/product_sales.png"/>
+            <div class="image-caption">상품별 매출액</div>
+        </div>
+        <p>매출액 기준으로 프로틴바가 3,538,519,748원으로 가장 높은 매출을 기록했으며, ROAS 측면에서는 샐러드키트가 2.28로 가장 효율적인 상품으로 나타났습니다. 반면, 프리미엄과일은 ROAS 0.10으로 가장 낮은 효율을 보였습니다.</p>
+        
+        <h3>4. 소비자 세그먼트</h3>
+        <div class="image-container">
+            <img src="./artifacts/age_gender_heatmap.png"/>
+            <div class="image-caption">연령대-성별 세그먼트 매출 히트맵</div>
+        </div>
+        <p>30대 남성이 전체 매출의 32.5%(2,822,408,677원)를 차지하며 가장 중요한 소비자 그룹으로 확인되었습니다. 그 다음으로 40대 남성(26.0%), 50대 남성(17.0%) 순으로 매출 기여도가 높았습니다.</p>
+        
+        <div class="data-insight">
+            핵심 인사이트: 아마존을 통한 건강식품 카테고리(특히 프로틴바) 광고가 ROAS 2.12로 가장 효율적인 마케팅 조합으로 분석되었으며, 30대 남성을 주요 타겟으로 하는 전략이 효과적입니다.
+        </div>
+    </div>
+
+    <!-- 상세 분석 (Detailed Analysis) -->
+    <div class="detailed-analysis">
+        <h2>상세 분석 (Detailed Analysis)</h2>
+        
+        <h3>1. 매체별 광고 성과 분석</h3>
+        <div class="image-container">
+            <img src="./artifacts/media_cost_sales.png"/>
+            <div class="image-caption">매체별 광고비용 및 매출액</div>
+        </div>
+        <p>쿠빵이 전체 광고 예산의 40.0%(3,999,999,000원)로 가장 많은 비중을 차지했으나, ROAS는 0.85로 아마존(0.98)보다 낮았습니다. 아마존은 상대적으로 적은 광고 예산(2,000,000,000원)으로 더 높은 효율을 달성했습니다.</p>
+        
+        <div class="image-container">
+            <img src="./artifacts/media_conversion_rate.png"/>
+            <div class="image-caption">매체별 전환율</div>
+        </div>
+        <p>아마존의 전환율이 12.73%로 가장 높았으며, 이는 다른 매체들에 비해 광고 노출 대비 구매로 이어지는 비율이 높다는 것을 의미합니다. 전환당 비용(CPA) 측면에서도 아마존이 117원으로 가장 효율적이었습니다.</p>
+        
+        <h3>2. 카테고리별 광고 성과 분석</h3>
+        <div class="image-container">
+            <img src="./artifacts/category_cost_sales.png"/>
+            <div class="image-caption">카테고리별 광고비용 및 매출액</div>
+        </div>
+        <p>신선식품 카테고리가 전체 광고 예산의 34.3%(3,433,264,000원)로 가장 많은 비중을 차지했으며, 건강식품은 33.3%(3,333,333,000원), 간편식은 32.3%(3,233,403,000원)를 차지했습니다. 그러나 ROAS 측면에서는 건강식품이 1.36으로 가장 높았고, 간편식은 0.30으로 가장 낮았습니다.</p>
+        
+        <div class="image-container">
+            <img src="./artifacts/category_roas_cost_ratio.png"/>
+            <div class="image-caption">카테고리별 ROAS와 광고비용 비중</div>
+        </div>
+        <p>건강식품 카테고리는 광고 예산 비중(33.3%)에 비해 높은 ROAS(1.36)를 보여 가장 효율적인 카테고리로 분석되었습니다. 반면, 간편식은 광고 예산 비중(32.3%)에 비해 낮은 ROAS(0.30)를 보여 효율성 개선이 필요합니다.</p>
+        
+        <h3>3. 상품별 인기도 분석</h3>
+        <div class="image-container">
+            <img src="./artifacts/product_conversion.png"/>
+            <div class="image-caption">상품별 전환수</div>
+        </div>
+        <p>전환수 기준으로는 즉석밥세트가 8,375,941건(전체의 23.8%)으로 가장 많았으나, 매출액 기준으로는 프로틴바가 3,538,519,748원으로 가장 높았습니다. 이는 상품별 단가 차이에 따른 결과로 볼 수 있습니다.</p>
+        
+        <h3>4. 소비자 세그먼트 분석</h3>
+        <p>연령대-성별 세그먼트 분석 결과, 30대 남성이 전체 매출의 32.5%(2,822,408,677원)를 차지하며 가장 중요한 소비자 그룹으로 확인되었습니다. 상품별 주요 소비자 타겟을 살펴보면, 샐러드키트는 30대 남성, 프로틴바는 50대 남성, 즉석밥세트는 20대 남성이 주요 구매층으로 나타났습니다.</p>
+        
+        <h3>5. 광고 매체와 구매 전환 간의 상관관계 분석</h3>
+        <div class="image-container">
+            <img src="./artifacts/media_category_roas.png"/>
+            <div class="image-caption">매체-카테고리별 ROAS 히트맵</div>
+        </div>
+        <p>매체-카테고리 조합 중 아마존-건강식품이 ROAS 2.12로 가장 높은 효율을 보였습니다. 매체별 최고 성과 상품을 살펴보면, 네이바는 샐러드키트(ROAS 4.00), 아마존은 프로틴바(ROAS 3.33), 컬삼은 프로틴바(ROAS 2.79), 쿠빵은 샐러드키트(ROAS 2.26)로 나타났습니다.</p>
+        
+        <div class="image-container">
+            <img src="./artifacts/media_cpa.png"/>
+            <div class="image-caption">매체별 전환당 비용(CPA)</div>
+        </div>
+        <p>전환당 비용(CPA) 측면에서 아마존이 117원으로 가장 효율적이었으며, 이는 광고 비용 대비 많은 전환을 발생시켰다는 것을 의미합니다. 따라서 전환 효율성 측면에서도 아마존이 가장 우수한 매체로 분석되었습니다.</p>
+    </div>
+
+    <!-- 결론 및 제안사항 (Conclusions and Recommendations) -->
+    <div class="business-proposals">
+        <h2>결론 및 제안사항 (Conclusions and Recommendations)</h2>
+        
+        <h3>1. 종합 결론</h3>
+        <p>100억원의 광고 예산을 4개 매체에 30일 동안 집행한 결과, 전체 ROAS는 0.87로 나타났습니다. 매체별로는 아마존(ROAS 0.98), 카테고리별로는 건강식품(ROAS 1.36), 상품별로는 샐러드키트(ROAS 2.28)가 가장 높은 효율을 보였습니다. 소비자 세그먼트에서는 30대 남성이 전체 매출의 32.5%를 차지하며 가장 중요한 타겟으로 확인되었습니다.</p>
+        
+        <h3>2. 매체 전략 제안</h3>
+        <ul>
+            <li>아마존의 광고 예산 비중을 현재 20%에서 30-35%로 확대하여 전체 ROAS 개선</li>
+            <li>쿠빵의 광고 예산은 현재 40%에서 30-35%로 조정하여 효율성 개선</li>
+            <li>네이바와 컬삼은 각각 특화된 상품(네이바-샐러드키트, 컬삼-프로틴바)에 집중하여 광고 효율 극대화</li>
+        </ul>
+        
+        <h3>3. 카테고리 및 상품 전략 제안</h3>
+        <ul>
+            <li>건강식품 카테고리의 광고 예산 비중을 현재 33.3%에서 40-45%로 확대</li>
+            <li>간편식 카테고리는 광고 메시지와 타겟팅 전략을 재검토하여 ROAS 개선 필요</li>
+            <li>샐러드키트와 프로틴바에 마케팅 리소스를 집중하고, 프리미엄과일은 광고 전략 전면 재검토 필요</li>
+        </ul>
+        
+        <h3>4. 소비자 타겟팅 전략 제안</h3>
+        <ul>
+            <li>30대 남성을 주요 타겟으로 하는 맞춤형 마케팅 캠페인 강화</li>
+            <li>상품별 주요 소비자 타겟에 맞춘 차별화된 메시지 전략 수립 (예: 프로틴바-50대 남성, 즉석밥세트-20대 남성)</li>
+            <li>여성 소비자 유입을 위한 별도의 마케팅 전략 수립 필요</li>
+        </ul>
+        
+        <h3>5. 최적 마케팅 조합 제안</h3>
+        <div class="metric-highlight">
+            최적 매체-카테고리 조합: 아마존-건강식품 (ROAS 2.12)<br>
+            최적 매체-상품 조합: 네이바-샐러드키트 (ROAS 4.00)<br>
+            최적 소비자-상품 조합: 30대 남성-샐러드키트
+        </div>
+        
+        <p>위 분석 결과를 바탕으로, 향후 마케팅 예산 배분 및 전략 수립 시 효율성이 높은 조합에 집중하여 전체 ROAS를 개선하고 마케팅 ROI를 극대화할 것을 제안합니다.</p>
+    </div>
+</body>
+</html>

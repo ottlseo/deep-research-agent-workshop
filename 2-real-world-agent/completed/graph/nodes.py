@@ -1,5 +1,3 @@
-
-import os
 import logging
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
