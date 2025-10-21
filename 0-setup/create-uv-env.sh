@@ -210,23 +210,29 @@ for file in pyproject.toml .venv uv.lock; do
         mv "$file" "${file}.backup"
     elif [ -L "$file" ]; then
         print_info "기존 심링크 $file를 제거합니다."
-        rm "$file"
+        rm -f "$file"
     fi
 done
 
-# 심링크 생성
-ln -s 0-setup/pyproject.toml . || {
+# 심링크 생성 (절대 경로 사용)
+SOURCE_DIR="$(pwd)/0-setup"
+
+ln -sf "$SOURCE_DIR/pyproject.toml" . || {
     print_error "pyproject.toml 심링크 생성 실패"
+    print_error "현재 디렉토리: $(pwd)"
+    print_error "소스 경로: $SOURCE_DIR/pyproject.toml"
     exit 1
 }
 
-ln -s 0-setup/.venv . || {
+ln -sf "$SOURCE_DIR/.venv" . || {
     print_error ".venv 심링크 생성 실패"
+    print_error "현재 디렉토리: $(pwd)"
+    print_error "소스 경로: $SOURCE_DIR/.venv"
     exit 1
 }
 
-if [ -f "0-setup/uv.lock" ]; then
-    ln -s 0-setup/uv.lock . || {
+if [ -f "$SOURCE_DIR/uv.lock" ]; then
+    ln -sf "$SOURCE_DIR/uv.lock" . || {
         print_warning "uv.lock 심링크 생성 실패"
     }
 fi
