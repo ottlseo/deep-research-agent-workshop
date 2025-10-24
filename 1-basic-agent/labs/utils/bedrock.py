@@ -13,9 +13,6 @@ from textwrap import dedent
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-# Langchain
-from langchain.callbacks.base import BaseCallbackHandler
-
 # 새 핸들러와 포맷터 설정
 logger = logging.getLogger(__name__)
 logger.propagate = False  # 상위 로거로 메시지 전파 중지

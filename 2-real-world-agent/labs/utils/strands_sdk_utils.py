@@ -478,4 +478,4 @@ class ConversationEditor(SlidingWindowConversationManager):
         # 부모 클래스의 reduce_context는 should_truncate_results를 자동으로 처리
         super().reduce_context(agent, e, **kwargs)
 
-        print(f"✅ Cleanup complete: {len(agent.messages)} messages remaining")ㅈ
+        print(f"✅ Cleanup complete: {len(agent.messages)} messages remaining")
