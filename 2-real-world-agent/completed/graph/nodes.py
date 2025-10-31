@@ -124,8 +124,8 @@ async def planner_node(task=None, **kwargs):
         streaming=True,
     )
 
-    full_plan, messages = shared_state.get("full_plan", ""), shared_state["messages"]
-    message = '\n\n'.join([messages[-1]["content"][-1]["text"], FULL_PLAN_FORMAT.format(full_plan)])
+    messages = shared_state["messages"]
+    message = messages[-1]["content"][-1]["text"]
 
     # Process streaming response and collect text in one pass
     full_text = ""
