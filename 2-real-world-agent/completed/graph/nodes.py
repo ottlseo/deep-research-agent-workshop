@@ -160,7 +160,7 @@ async def supervisor_node(task=None, **kwargs):
     agent = strands_utils.get_agent(
         agent_name="supervisor",
         system_prompts=apply_prompt_template(prompt_name="supervisor", prompt_context={}),
-        agent_type="claude-sonnet-4", # claude-sonnet-3-5-v-2, claude-sonnet-3-7
+        agent_type="claude-sonnet-4-5", # claude-sonnet-3-5-v-2, claude-sonnet-3-7
         enable_reasoning=False,
         prompt_cache_info=(True, "default"),  # enable prompt caching for reasoning agent
         tools=[coder_agent_tool, reporter_agent_tool, tracker_agent_tool, validator_agent_tool],  # Add coder, reporter, tracker and validator agents as tools
