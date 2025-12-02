@@ -1,10 +1,14 @@
 import logging
-from utils.strands_sdk_utils import strands_utils
+from strands.types.content import ContentBlock
+from utils.strands_sdk_utils import strands_utils, TokenTracker
 from prompts.template import apply_prompt_template
 from utils.common_utils import get_message_from_string
 
 # Tools
-from tools import coder_agent_tool, reporter_agent_tool, tracker_agent_tool, validator_agent_tool
+from tools.coder_agent_tool import coder_agent_tool
+from tools.reporter_agent_tool import reporter_agent_tool
+from tools.tracker_agent_tool import tracker_agent_tool
+from tools.validator_agent_tool import validator_agent_tool
 
 # Simple logger setup
 logger = logging.getLogger(__name__)
@@ -24,6 +28,11 @@ def log_node_complete(node_name: str):
     """Log the completion of a node."""
     print()  # Add newline before log
     logger.info(f"{Colors.GREEN}===== {node_name} completed ====={Colors.END}")
+
+    # Print token usage using TokenTracker
+    global _global_node_states
+    shared_state = _global_node_states.get('shared', {})
+    TokenTracker.print_current(shared_state)
 
 # Global state storage for sharing between nodes
 _global_node_states = {}
@@ -66,24 +75,27 @@ async def coordinator_node(task=None, **kwargs):
     agent = strands_utils.get_agent(
         agent_name="coordinator",
         system_prompts=apply_prompt_template(prompt_name="coordinator", prompt_context={}), # apply_prompt_template(prompt_name="task_agent", prompt_context={"TEST": "sdsd"})
-        agent_type="claude-sonnet-4", # claude-sonnet-3-5-v-2, claude-sonnet-3-7
+        model_id="us.anthropic.claude-sonnet-4-20250514-v1:0", # 사용할 LLM 모델 ID
         enable_reasoning=False,
         prompt_cache_info=(False, None), #(False, None), (True, "default")
+        tool_cache=False,
         streaming=True,
     )
+
+    # Store data directly in shared global storage (before streaming for TokenTracker)
+    if 'shared' not in _global_node_states: _global_node_states['shared'] = {}
+    shared_state = _global_node_states['shared']
 
     # Process streaming response and collect text in one pass
     full_text = ""
     async for event in strands_utils.process_streaming_response_yield(
         agent, request_prompt, agent_name="coordinator", source="coordinator_node"
     ):
-        if event.get("event_type") == "text_chunk": 
+        if event.get("event_type") == "text_chunk":
             full_text += event.get("data", "")
+        # Accumulate token usage
+        TokenTracker.accumulate(event, shared_state)
     response = {"text": full_text}
-
-    # Store data directly in shared global storage
-    if 'shared' not in _global_node_states: _global_node_states['shared'] = {}
-    shared_state = _global_node_states['shared']
 
     # Update shared global state
     shared_state['messages'] = agent.messages
@@ -118,9 +130,10 @@ async def planner_node(task=None, **kwargs):
     agent = strands_utils.get_agent(
         agent_name="planner",
         system_prompts=apply_prompt_template(prompt_name="planner", prompt_context={"USER_REQUEST": request}),
-        agent_type="claude-sonnet-4", # claude-sonnet-3-5-v-2, claude-sonnet-3-7
+        model_id="us.anthropic.claude-sonnet-4-20250514-v1:0", # 사용할 LLM 모델 ID
         enable_reasoning=True,
         prompt_cache_info=(False, None),  # enable prompt caching for reasoning agent, (False, None), (True, "default")
+        tool_cache=False,
         streaming=True,
     )
 
@@ -132,7 +145,10 @@ async def planner_node(task=None, **kwargs):
     async for event in strands_utils.process_streaming_response_yield(
         agent, message, agent_name="planner", source="planner_node"
     ):
-        if event.get("event_type") == "text_chunk": full_text += event.get("data", "")
+        if event.get("event_type") == "text_chunk":
+            full_text += event.get("data", "")
+        # Accumulate token usage
+        TokenTracker.accumulate(event, shared_state)
     response = {"text": full_text}
 
     # Update shared global state
@@ -160,9 +176,10 @@ async def supervisor_node(task=None, **kwargs):
     agent = strands_utils.get_agent(
         agent_name="supervisor",
         system_prompts=apply_prompt_template(prompt_name="supervisor", prompt_context={}),
-        agent_type="claude-sonnet-4-5", # claude-sonnet-3-5-v-2, claude-sonnet-3-7
+        model_id="global.anthropic.claude-sonnet-4-5-20250929-v1:0", # 사용할 LLM 모델 ID
         enable_reasoning=False,
         prompt_cache_info=(True, "default"),  # enable prompt caching for reasoning agent
+        tool_cache=False,
         tools=[coder_agent_tool, reporter_agent_tool, tracker_agent_tool, validator_agent_tool],  # Add coder, reporter, tracker and validator agents as tools
         streaming=True,
     )
@@ -175,7 +192,10 @@ async def supervisor_node(task=None, **kwargs):
     async for event in strands_utils.process_streaming_response_yield(
         agent, message, agent_name="supervisor", source="supervisor_node"
     ):
-        if event.get("event_type") == "text_chunk": full_text += event.get("data", "")
+        if event.get("event_type") == "text_chunk":
+            full_text += event.get("data", "")
+        # Accumulate token usage
+        TokenTracker.accumulate(event, shared_state)
     response = {"text": full_text}
 
     # Update shared global state

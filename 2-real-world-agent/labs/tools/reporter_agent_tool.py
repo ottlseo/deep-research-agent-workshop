@@ -2,11 +2,13 @@ import logging
 import asyncio
 from typing import Any, Annotated
 from strands.types.tools import ToolResult, ToolUse
+from strands.tools.tools import PythonAgentTool
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
 from utils.common_utils import get_message_from_string
 
-from tools import python_repl_tool, bash_tool
+from tools.python_repl_tool import python_repl_tool
+from tools.bash_tool import bash_tool
 from strands_tools import file_read
 
 # Simple logger setup
@@ -38,7 +40,7 @@ class Colors:
     GREEN = '\033[92m'
     END = '\033[0m'
 
-def handle_reporter_agent_tool(_task: Annotated[str, "The reporting task or instruction for generating the report."]):
+def _handle_reporter_agent_tool(_task: Annotated[str, "The reporting task or instruction for generating the report."]):
     """
     Generate comprehensive reports based on analysis results using a specialized reporter agent.
 
@@ -73,9 +75,10 @@ def handle_reporter_agent_tool(_task: Annotated[str, "The reporting task or inst
     reporter_agent = strands_utils.get_agent(
         agent_name="reporter",
         system_prompts=apply_prompt_template(prompt_name="reporter", prompt_context={"USER_REQUEST": request_prompt, "FULL_PLAN": full_plan}),
-        agent_type="claude-sonnet-3-7", # claude-sonnet-3-5-v-2, claude-sonnet-3-7
+        model_id="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
         enable_reasoning=False,
         prompt_cache_info=(True, "default"),  # reasoning agent uses prompt caching
+        tool_cache=False,
         tools=[python_repl_tool, bash_tool, file_read],
         streaming=True  # Enable streaming for consistency
     )
@@ -111,13 +114,13 @@ def handle_reporter_agent_tool(_task: Annotated[str, "The reporting task or inst
     return result_text
 
 # Function name must match tool name
-def reporter_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
+def _reporter_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
     tool_use_id = tool["toolUseId"]
     task = tool["input"]["task"]
-    
+
     # Use the existing handle_reporter_agent_tool function
-    result = handle_reporter_agent_tool(task)
-    
+    result = _handle_reporter_agent_tool(task)
+
     # Check if execution was successful based on the result string
     if "Error in reporter agent tool" in result:
         return {
@@ -131,3 +134,6 @@ def reporter_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
             "status": "success",
             "content": [{"text": result}]
         }
+
+# Wrap with PythonAgentTool for proper Strands SDK registration
+reporter_agent_tool = PythonAgentTool("reporter_agent_tool", TOOL_SPEC, _reporter_agent_tool)

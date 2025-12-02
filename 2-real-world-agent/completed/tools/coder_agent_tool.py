@@ -2,15 +2,24 @@ import logging
 import asyncio
 from typing import Any, Annotated
 from strands.types.tools import ToolResult, ToolUse
+from strands.types.content import ContentBlock
+from strands.tools.tools import PythonAgentTool
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
 from utils.common_utils import get_message_from_string
-from tools import python_repl_tool, bash_tool
-
+from tools.bash_tool import bash_tool
+from tools.write_and_execute_tool import write_and_execute_tool
+from strands_tools import file_read
+from utils.strands_sdk_utils import TokenTracker
 
 # Simple logger setup
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+class Colors:
+    GREEN = '\033[92m'
+    CYAN = '\033[96m'
+    END = '\033[0m'
 
 TOOL_SPEC = {
     "name": "coder_agent_tool",
@@ -38,7 +47,7 @@ class Colors:
     YELLOW = '\033[93m'
     END = '\033[0m'
 
-def handle_coder_agent_tool(task: Annotated[str, "The coding task or question that needs to be executed by the coder agent."]):
+def _handle_coder_agent_tool(task: Annotated[str, "The coding task or question that needs to be executed by the coder agent."]):
     """
     Execute Python code and bash commands using a specialized coder agent.
 
@@ -71,15 +80,20 @@ def handle_coder_agent_tool(task: Annotated[str, "The coding task or question th
     coder_agent = strands_utils.get_agent(
         agent_name="coder",
         system_prompts=apply_prompt_template(prompt_name="coder", prompt_context={"USER_REQUEST": request_prompt, "FULL_PLAN": full_plan}),
-        agent_type="claude-sonnet-4-5", # claude-sonnet-3-5-v-2, claude-sonnet-3-7, claude-sonnet-4
+        model_id="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
         enable_reasoning=False,
         prompt_cache_info=(True, "default"),  # reasoning agent uses prompt caching
-        tools=[python_repl_tool, bash_tool],
+        tool_cache=True,
+        tools=[write_and_execute_tool, bash_tool, file_read],
         streaming=True  # Enable streaming for consistency
     )
 
     # Prepare message with context if available
     message = '\n\n'.join([messages[-1]["content"][-1]["text"], clues])
+
+    # Create message with cache point for messages caching
+    # This caches the large context (clues) for cost savings
+    message = [ContentBlock(text=message), ContentBlock(cachePoint={"type": "default"})]  # Cache point for messages caching
 
     # Process streaming response and collect text in one pass
     async def process_coder_stream():
@@ -87,7 +101,10 @@ def handle_coder_agent_tool(task: Annotated[str, "The coding task or question th
         async for event in strands_utils.process_streaming_response_yield(
             coder_agent, message, agent_name="coder", source="coder_tool"
         ):
-            if event.get("event_type") == "text_chunk": full_text += event.get("data", "")
+            if event.get("event_type") == "text_chunk":
+                full_text += event.get("data", "")
+            # Accumulate token usage
+            TokenTracker.accumulate(event, shared_state)
         return {"text": full_text}
 
     response = asyncio.run(process_coder_stream())
@@ -106,15 +123,17 @@ def handle_coder_agent_tool(task: Annotated[str, "The coding task or question th
     shared_state['history'] = history
 
     logger.info(f"\n{Colors.GREEN}Coder Agent Tool completed successfully{Colors.END}")
+    # Print token usage using TokenTracker
+    TokenTracker.print_current(shared_state)
     return result_text
 
 # Function name must match tool name
-def coder_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
+def _coder_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
     tool_use_id = tool["toolUseId"]
     task = tool["input"]["task"]
 
     # Use the existing handle_coder_agent_tool function
-    result = handle_coder_agent_tool(task)
+    result = _handle_coder_agent_tool(task)
 
     # Check if execution was successful based on the result string
     if "Error in coder agent tool" in result:
@@ -129,3 +148,6 @@ def coder_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
             "status": "success",
             "content": [{"text": result}]
         }
+
+# Wrap with PythonAgentTool for proper Strands SDK registration
+coder_agent_tool = PythonAgentTool("coder_agent_tool", TOOL_SPEC, _coder_agent_tool)

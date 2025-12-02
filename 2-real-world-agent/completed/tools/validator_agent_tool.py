@@ -2,21 +2,26 @@ import logging
 import asyncio
 from typing import Any, Annotated, Dict, List
 from strands.types.tools import ToolResult, ToolUse
+from strands.types.content import ContentBlock
+from strands.tools.tools import PythonAgentTool
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
 from utils.common_utils import get_message_from_string
 import pandas as pd
-from datetime import datetime
+from utils.strands_sdk_utils import TokenTracker
 
-from tools import python_repl_tool, bash_tool
+from tools.bash_tool import bash_tool
+from tools.write_and_execute_tool import write_and_execute_tool
 from strands_tools import file_read
-
-from dotenv import load_dotenv
-load_dotenv()
 
 # Simple logger setup
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+class Colors:
+    GREEN = '\033[92m'
+    CYAN = '\033[96m'
+    END = '\033[0m'
 
 TOOL_SPEC = {
     "name": "validator_agent_tool",
@@ -47,11 +52,11 @@ class OptimizedValidator:
     """
     Performance-optimized validator for large datasets with many calculations
     """
-    
+
     def __init__(self):
         self.data_cache: Dict[str, pd.DataFrame] = {}
         self.validation_results = {}
-        
+
     def load_data_once(self, file_path: str) -> pd.DataFrame:
         """Cache data loading to avoid repeated I/O operations"""
         if file_path not in self.data_cache:
@@ -64,13 +69,13 @@ class OptimizedValidator:
                 else:
                     # Try CSV as default
                     self.data_cache[file_path] = pd.read_csv(file_path)
-                    
+
                 logger.info(f"✅ Loaded {len(self.data_cache[file_path])} rows from {file_path}")
             except Exception as e:
                 logger.error(f"❌ Failed to load data from {file_path}: {e}")
                 raise
         return self.data_cache[file_path]
-    
+
     def filter_calculations_by_priority(self, calculations: List[Dict]) -> tuple:
         """
         Filter calculations by importance to optimize processing time
@@ -79,10 +84,10 @@ class OptimizedValidator:
         high_priority = [calc for calc in calculations if calc.get('importance') == 'high']
         medium_priority = [calc for calc in calculations if calc.get('importance') == 'medium']
         low_priority = [calc for calc in calculations if calc.get('importance') == 'low']
-        
+
         # Performance optimization: limit processing based on total count
         total_calcs = len(calculations)
-        
+
         if total_calcs > 50:
             # For large datasets, prioritize aggressively
             priority_calcs = high_priority + medium_priority[:min(10, len(medium_priority))]
@@ -95,7 +100,7 @@ class OptimizedValidator:
             # Small datasets, validate most calculations
             priority_calcs = high_priority + medium_priority + low_priority[:5]
             logger.info(f"🔧 Small dataset detected ({total_calcs} calculations). Validating most calculations.")
-        
+
         stats = {
             'total': total_calcs,
             'high': len(high_priority),
@@ -103,10 +108,10 @@ class OptimizedValidator:
             'low': len(low_priority),
             'selected': len(priority_calcs)
         }
-        
+
         return priority_calcs, stats
 
-def handle_validator_agent_tool(_task: Annotated[str, "The validation task or instruction for validating calculations and generating citations."]):
+def _handle_validator_agent_tool(_task: Annotated[str, "The validation task or instruction for validating calculations and generating citations."]):
     """
     Validate numerical calculations and generate citation metadata for reports.
 
@@ -141,31 +146,33 @@ def handle_validator_agent_tool(_task: Annotated[str, "The validation task or in
     validator_agent = strands_utils.get_agent(
         agent_name="validator",
         system_prompts=apply_prompt_template(prompt_name="validator", prompt_context={"USER_REQUEST": request_prompt, "FULL_PLAN": full_plan}),
-        agent_type="claude-sonnet-4", # claude-sonnet-3-5-v-2, claude-sonnet-3-7
+        model_id="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
         enable_reasoning=False,
-        prompt_cache_info=(True, "default"),  # reasoning agent uses prompt caching
-        tools=[python_repl_tool, bash_tool, file_read],
+        prompt_cache_info=(False, None), # reasoning agent uses prompt caching
+        tool_cache=False,
+        tools=[write_and_execute_tool, bash_tool, file_read],
         streaming=True  # Enable streaming for consistency
     )
 
     # Prepare message with context if available
     message = '\n\n'.join([messages[-1]["content"][-1]["text"], clues])
 
+    # Create message with cache point for messages caching
+    # This caches the large context (clues) for cost savings
+    message = [ContentBlock(text=message), ContentBlock(cachePoint={"type": "default"})]  # Cache point for messages caching
+
     # Process streaming response
     async def process_validator_stream():
-        streaming_events = []
+        full_text = ""
         async for event in strands_utils.process_streaming_response_yield(
             validator_agent, message, agent_name="validator", source="validator_tool"
         ):
-            streaming_events.append(event)
-
-        # Reconstruct response from streaming events for return value
-        response = {"text": ""}
-        for event in streaming_events:
             if event.get("event_type") == "text_chunk":
-                response["text"] += event.get("data", "")
+                full_text += event.get("data", "")
+            # Accumulate token usage
+            TokenTracker.accumulate(event, shared_state)
 
-        return validator_agent, response
+        return validator_agent, {"text": full_text}
 
     validator_agent, response = asyncio.run(process_validator_stream())
     result_text = response['text']
@@ -183,16 +190,18 @@ def handle_validator_agent_tool(_task: Annotated[str, "The validation task or in
     shared_state['history'] = history
 
     logger.info(f"\n{Colors.GREEN}Validator Agent Tool completed{Colors.END}")
+    # Print token usage using TokenTracker
+    TokenTracker.print_current(shared_state)
     return result_text
 
 # Function name must match tool name
-def validator_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
+def _validator_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
     tool_use_id = tool["toolUseId"]
     task = tool["input"]["task"]
-    
+
     # Use the existing handle_validator_agent_tool function
-    result = handle_validator_agent_tool(task)
-    
+    result = _handle_validator_agent_tool(task)
+
     # Check if execution was successful based on the result string
     if "Error" in result:
         return {
@@ -206,3 +215,6 @@ def validator_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
             "status": "success",
             "content": [{"text": result}]
         }
+
+# Wrap with PythonAgentTool for proper Strands SDK registration
+validator_agent_tool = PythonAgentTool("validator_agent_tool", TOOL_SPEC, _validator_agent_tool)

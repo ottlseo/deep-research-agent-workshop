@@ -3,7 +3,6 @@ import logging
 import traceback
 import asyncio
 from datetime import datetime
-from utils.bedrock import bedrock_info
 from strands import Agent
 from strands.models import BedrockModel
 from botocore.config import Config
@@ -50,59 +49,121 @@ class ColoredStreamingCallback(StreamingStdOutCallbackHandler):
     def on_llm_new_token(self, token: str, **kwargs) -> None:
         print(f"{self.color_code}{token}{self.reset_code}", end="", flush=True)
 
+# Wrap agent with StreamableAgent for queue-based streaming (Agent as a tool 사용할 경우, tool response 또한 스트리밍 하기 위해서)
+# Graph를 사용한다면 에이전트 마다 StreamableAgent를 감싸면 안된다. 그래프는 그래프 완성 후 StreamableGprah로 래핑함.
+class StreamableAgent:
+    """Agent wrapper that adds streaming capability with event queue pattern."""
+
+    def __init__(self, agent):
+        """Wrap a Strands Agent to add queue-based streaming."""
+        self.agent = agent
+        # Expose common agent attributes for compatibility
+        self.messages = agent.messages
+        self.system_prompt = agent.system_prompt
+        self.model = agent.model
+        # Only expose tools if agent has it
+        if hasattr(agent, 'tools'): self.tools = agent.tools
+
+    def __getattr__(self, name):
+        """Delegate attribute access to wrapped agent."""
+        return getattr(self.agent, name)
+
+    async def _cleanup_agent(self, agent_task):
+        """Handle agent completion and cleanup."""
+        if not agent_task.done():
+            try: await asyncio.wait_for(agent_task, timeout=2.0)
+            except asyncio.TimeoutError:
+                agent_task.cancel()
+                try: await agent_task
+                except asyncio.CancelledError: pass
+
+    async def _yield_pending_events(self):
+        """Yield any pending events from global queue."""
+        from utils.event_queue import get_event, has_events
+
+        while has_events():
+            event = get_event()
+            if event: yield event
+
+    async def stream_async_with_queue(self, message, agent_name=None, source=None):
+        """
+        Stream agent response using background task + event queue pattern.
+        Following pattern from StreamableGraph.stream_async()
+
+        Args:
+            message: Message to send to agent
+            agent_name: Name of the agent for event tagging (optional)
+            source: Source identifier for the event (optional)
+
+        Yields:
+            Events from global queue (formatted for display)
+        """
+        from utils.event_queue import clear_queue
+
+        # Use agent's name if not provided
+        if agent_name is None: agent_name = getattr(self.agent, 'name', 'agent')
+        if source is None: source = agent_name
+
+        # Clear queue before starting
+        clear_queue()
+
+        # Step 1: Run agent in background - events go to global queue
+        async def run_agent():
+            try:
+                full_text = ""
+                async for event in strands_utils.process_streaming_response_yield(
+                    self.agent, message, agent_name=agent_name, source=source
+                ):
+                    if event.get("event_type") == "text_chunk": full_text += event.get("data", "")
+                return full_text
+            except Exception as e:
+                print(f"Agent error: {e}")
+                raise
+
+        agent_task = asyncio.create_task(run_agent())
+
+        # Step 2: Consume events from global queue
+        try:
+            while not agent_task.done():
+                async for event in self._yield_pending_events():
+                    yield event
+                await asyncio.sleep(0.005)
+        finally:
+            await self._cleanup_agent(agent_task)
+            async for event in self._yield_pending_events():
+                yield event
+
+        yield {"type": "agent_complete", "event_type": "complete", "message": f"{agent_name} processing complete"}
+
 class strands_utils():
 
     @staticmethod
     def get_model(**kwargs):
 
-        llm_type = kwargs["llm_type"]
+        model_id = kwargs["llm_type"]  # Now receives full model ID directly from env
         enable_reasoning = kwargs["enable_reasoning"]
+        tool_cache = kwargs["tool_cache"]
 
-        if llm_type in ["claude-sonnet-3-7", "claude-sonnet-4", "claude-sonnet-4-5"]:
-            
-            if llm_type == "claude-sonnet-3-7": model_name = "Claude-V3-7-Sonnet-CRI"
-            elif llm_type == "claude-sonnet-4": model_name = "Claude-V4-Sonnet-CRI"
-            elif llm_type == "claude-sonnet-4-5": model_name = "Claude-V4-5-Sonnet-CRI"
-
-            ## BedrockModel params: https://strandsagents.com/latest/api-reference/models/?h=bedrockmodel#strands.models.bedrock.BedrockModel
-            llm = BedrockModel(
-                model_id=bedrock_info.get_model_id(model_name=model_name),
-                streaming=True,
-                max_tokens=8192*5,
-                stop_sequences=["\n\nHuman"],
-                temperature=1 if enable_reasoning else 0.01,
-                additional_request_fields={
-                    "thinking": {
-                        "type": "enabled" if enable_reasoning else "disabled",
-                        **({"budget_tokens": 8192} if enable_reasoning else {}),
-                    }
-                },
-                # cache_prompt parameter removed - use SystemContentBlock with cachePoint instead
-                #cache_tools: Cache point type for tools
-                boto_client_config=Config(
-                    read_timeout=900,
-                    connect_timeout=900,
-                    retries=dict(max_attempts=50, mode="adaptive"),
-                )
-            )   
-        elif llm_type == "claude-sonnet-3-5-v-2":
-            ## BedrockModel params: https://strandsagents.com/latest/api-reference/models/?h=bedrockmodel#strands.models.bedrock.BedrockModel
-            llm = BedrockModel(
-                model_id=bedrock_info.get_model_id(model_name="Claude-V3-5-V-2-Sonnet-CRI"),
-                streaming=True,
-                max_tokens=8192,
-                stop_sequences=["\n\nHuman"],
-                temperature=0.01,
-                # cache_prompt parameter removed - use SystemContentBlock with cachePoint instead
-                #cache_tools: Cache point type for tools
-                boto_client_config=Config(
-                    read_timeout=900,
-                    connect_timeout=900,
-                    retries=dict(max_attempts=50, mode="standard"),
-                )
+        ## BedrockModel params: https://strandsagents.com/latest/api-reference/models/?h=bedrockmodel#strands.models.bedrock.BedrockModel
+        llm = BedrockModel(
+            model_id=model_id,
+            streaming=True,
+            cache_tools="default" if tool_cache else None,
+            max_tokens=8192*5,
+            stop_sequences=["\n\nHuman"],
+            temperature=1 if enable_reasoning else 0.01,
+            additional_request_fields={
+                "thinking": {
+                    "type": "enabled" if enable_reasoning else "disabled",
+                    **({"budget_tokens": 8192} if enable_reasoning else {}),
+                }
+            },
+            boto_client_config=Config(
+                read_timeout=900,
+                connect_timeout=900,
+                retries=dict(max_attempts=50, mode="adaptive"),
             )
-        else:
-            raise ValueError(f"Unknown LLM type: {llm_type}")
+        )
 
         return llm
 
@@ -110,18 +171,19 @@ class strands_utils():
     def get_agent(**kwargs):
 
         agent_name, system_prompts = kwargs["agent_name"], kwargs["system_prompts"]
-        agent_type = kwargs.get("agent_type", "claude-sonnet-4-5")
+        model_id = kwargs.get("model_id", "claude-sonnet-4-5")
         enable_reasoning = kwargs.get("enable_reasoning", False)
         prompt_cache_info = kwargs.get("prompt_cache_info", (False, None)) # (True, "default")
+        tool_cache = kwargs.get("tool_cache", False)
         tools = kwargs.get("tools", None)
         streaming = kwargs.get("streaming", True)
-        
+
         # Context management parameters for SummarizingConversationManager
         context_overflow_summary_ratio = kwargs.get("context_overflow_summary_ratio", 0.5)  # Summarize 50% of older messages
         context_overflow_preserve_recent_messages = kwargs.get("context_overflow_preserve_recent_messages", 10)  # Keep recent 10 messages
 
         prompt_cache, cache_type = prompt_cache_info
-        llm = strands_utils.get_model(llm_type=agent_type, enable_reasoning=enable_reasoning)
+        llm = strands_utils.get_model(llm_type=model_id, enable_reasoning=enable_reasoning, tool_cache=tool_cache)
         llm.config["streaming"] = streaming
 
         # Convert system_prompt to SystemContentBlock array with cachePoint if caching is enabled
@@ -135,6 +197,9 @@ class strands_utils():
             # If caching is disabled, pass the string as-is
             logger.info(f"{Colors.GREEN}{agent_name.upper()} - Prompt Cache Disabled{Colors.END}")
             system_prompt_with_cache = system_prompts
+
+        if tool_cache: logger.info(f"{Colors.GREEN}{agent_name.upper()} - Tool Cache Enabled{Colors.END}")
+        else: logger.info(f"{Colors.GREEN}{agent_name.upper()} - Tool Cache Disabled{Colors.END}")
 
         agent = Agent(
             model=llm,
@@ -289,6 +354,42 @@ class strands_utils():
                 put_event(agentcore_event)
                 yield agentcore_event
 
+        # After streaming completes, extract usage info from agent's metrics (에이전트 응답이 종료된 이후 최종적으로 한번만 보낸다)
+        # Reference: https://strandsagents.com/latest/documentation/docs/user-guide/observability-evaluation/metrics/
+        try:
+            usage_info = None
+
+            # Strands SDK stores token usage in agent.event_loop_metrics.accumulated_usage
+            if hasattr(agent, 'event_loop_metrics'):
+                metrics = agent.event_loop_metrics
+                if hasattr(metrics, 'accumulated_usage'):
+                    usage_info = metrics.accumulated_usage
+
+            # If we found usage info, create and yield the event
+            if usage_info:
+                # Extract model ID from agent
+                model_id = agent.model.config.get('model_id', 'unknown')
+
+                usage_event = {
+                    "timestamp": datetime.now().isoformat(),
+                    "session_id": session_id,
+                    "agent_name": agent_name,
+                    "model_id": model_id,
+                    "source": source or f"{agent_name}_node",
+                    "type": "agent_usage_stream",
+                    "event_type": "usage_metadata",
+                    "input_tokens": usage_info.get("inputTokens", 0),
+                    "output_tokens": usage_info.get("outputTokens", 0),
+                    "total_tokens": usage_info.get("totalTokens", 0),
+                    "cache_read_input_tokens": usage_info.get("cacheReadInputTokens", 0),
+                    "cache_write_input_tokens": usage_info.get("cacheWriteInputTokens", 0)
+                }
+                put_event(usage_event)
+                yield usage_event
+
+        except Exception as e:
+            logger.warning(f"Could not extract usage info from {agent_name}: {e}")
+
     # 툴 사용 ID와 툴 이름 매핑을 위한 클래스 변수
     _tool_use_mapping = {}
 
@@ -347,7 +448,7 @@ class strands_utils():
                         return {
                             **base_event,
                             "type": "agent_tool_stream",
-                            "event_type": "tool_result", 
+                            "event_type": "tool_result",
                             "tool_name": tool_name,
                             "tool_id": tool_id,
                             "output": output
@@ -362,13 +463,25 @@ class strands_utils():
                 "reasoning_text": strands_event.get("reasoningText", "")[:200]
             }
 
+        # 사용량/메타데이터 이벤트
+        elif "metadata" in strands_event and "usage" in strands_event["metadata"]:
+            usage = strands_event["metadata"]["usage"]
+            return {
+                **base_event,
+                "type": "agent_usage_stream",
+                "event_type": "usage_metadata",
+                "input_tokens": usage.get("inputTokens", 0),
+                "output_tokens": usage.get("outputTokens", 0),
+                "total_tokens": usage.get("totalTokens", 0)
+            }
+
         return None
 
     @staticmethod
     def parsing_text_from_response(response):
 
         """
-        Usage (async iterator x): 
+        Usage (async iterator x):
         agent = Agent()
         response = agent(query)
         response = strands_utils.parsing_text_from_response(response)
@@ -381,14 +494,14 @@ class strands_utils():
 
         output["text"] = response.message["content"][-1]["text"]
 
-        return output  
+        return output
 
     @staticmethod
     def process_event_for_display(event):
         """Process events for colored terminal output"""
         # Initialize colored callbacks for terminal display
         callback_default = ColoredStreamingCallback('white')
-        callback_reasoning = ColoredStreamingCallback('cyan')        
+        callback_reasoning = ColoredStreamingCallback('cyan')
         callback_tool = ColoredStreamingCallback('yellow')
 
         #print ("event", event)
@@ -400,7 +513,7 @@ class strands_utils():
             elif event.get("event_type") == "reasoning":
                 callback_reasoning.on_llm_new_token(event.get('reasoning_text', ''))
 
-            elif event.get("event_type") == "tool_use": 
+            elif event.get("event_type") == "tool_use":
                 pass
 
             elif event.get("event_type") == "tool_result":
@@ -421,14 +534,21 @@ class strands_utils():
                     if cmd: callback_tool.on_llm_new_token(f"CMD:\n```bash\n{cmd}\n```\n")
                     if stdout and stdout != 'None': callback_tool.on_llm_new_token(f"Output:\n{stdout}\n")
 
+                elif tool_name == "write_and_execute_tool":
+                    # write_and_execute_tool: 작성 결과 + 실행 결과 (전체 출력)
+                    callback_tool.on_llm_new_token(f"{output}\n")
+
                 elif tool_name == "file_read":
                     # file_read 결과는 보통 길어서 앞부분만 표시
                     truncated_output = output[:500] + "..." if len(output) > 500 else output
                     callback_tool.on_llm_new_token(f"File content preview:\n{truncated_output}\n")
 
+                elif tool_name == "rag_tool":
+                    callback_tool.on_llm_new_token(f"rag response:\n{output}\n")
+
                 else: # 기타 모든 툴 결과 표시, 코더 툴, 리포터 툴 결과도 다 출력 (for debug)
-                    callback_tool.on_llm_new_token(f"Output: pass - you can see that in debug mode\n")
-                    #callback_default.on_llm_new_token(f"Output: {output}\n")
+                    #callback_tool.on_llm_new_token(f"Output: pass - you can see that in debug mode\n")
+                    callback_default.on_llm_new_token(f"Output: {output}\n")
                     #pass
 
 class FunctionNode(MultiAgentBase):
@@ -442,18 +562,18 @@ class FunctionNode(MultiAgentBase):
     def __call__(self, task=None, **kwargs):
         """Synchronous execution for compatibility with MultiAgentBase"""
         # Pass task and kwargs directly to function
-        if asyncio.iscoroutinefunction(self.func): 
+        if asyncio.iscoroutinefunction(self.func):
             return asyncio.run(self.func(task=task, **kwargs))
-        else: 
+        else:
             return self.func(task=task, **kwargs)
 
     # Execute function and return standard MultiAgentResult
     async def invoke_async(self, task=None, invocation_state=None, **kwargs):
-        # Execute function (nodes now use global state for data sharing)  
+        # Execute function (nodes now use global state for data sharing)
         # Pass task and kwargs directly to function
-        if asyncio.iscoroutinefunction(self.func): 
+        if asyncio.iscoroutinefunction(self.func):
             response = await self.func(task=task, **kwargs)
-        else: 
+        else:
             response = self.func(task=task, **kwargs)
 
         agent_result = AgentResult(
@@ -468,3 +588,188 @@ class FunctionNode(MultiAgentBase):
             status=Status.COMPLETED,
             results={self.name: NodeResult(result=agent_result)}
         )
+
+
+# ============================================================================
+# Token Tracking Helper Class
+# ============================================================================
+
+class TokenTracker:
+    """Helper class for tracking and reporting token usage across agents."""
+
+    # ANSI color codes
+    CYAN = '\033[96m'
+    YELLOW = '\033[93m'
+    END = '\033[0m'
+
+    @staticmethod
+    def initialize(shared_state):
+        """Initialize token tracking structure in shared state if not exists."""
+        if 'token_usage' not in shared_state:
+            shared_state['token_usage'] = {
+                'total_input_tokens': 0,
+                'total_output_tokens': 0,
+                'total_tokens': 0,
+                'cache_read_input_tokens': 0,   # Cache hits (90% discount)
+                'cache_write_input_tokens': 0,  # Cache creation (25% extra cost)
+                'by_agent': {}
+            }
+
+    @staticmethod
+    def accumulate(event, shared_state):
+        """Accumulate token usage from metadata events into shared state."""
+        if event.get("event_type") == "usage_metadata":
+            TokenTracker.initialize(shared_state)
+            usage = shared_state['token_usage']
+
+            input_tokens = event.get('input_tokens', 0)
+            output_tokens = event.get('output_tokens', 0)
+            total_tokens = event.get('total_tokens', 0)
+            cache_read = event.get('cache_read_input_tokens', 0)
+            cache_write = event.get('cache_write_input_tokens', 0)
+
+            # Accumulate total tokens
+            usage['total_input_tokens'] += input_tokens
+            usage['total_output_tokens'] += output_tokens
+            usage['total_tokens'] += total_tokens
+            usage['cache_read_input_tokens'] += cache_read
+            usage['cache_write_input_tokens'] += cache_write
+
+            # Track by agent with model_id
+            agent_name = event.get('agent_name')
+            model_id = event.get('model_id', 'unknown')
+
+            if agent_name:
+                if agent_name not in usage['by_agent']:
+                    usage['by_agent'][agent_name] = {
+                        'input': 0,
+                        'output': 0,
+                        'cache_read': 0,
+                        'cache_write': 0,
+                        'model_id': model_id
+                    }
+                usage['by_agent'][agent_name]['input'] += input_tokens
+                usage['by_agent'][agent_name]['output'] += output_tokens
+                usage['by_agent'][agent_name]['cache_read'] += cache_read
+                usage['by_agent'][agent_name]['cache_write'] += cache_write
+                usage['by_agent'][agent_name]['model_id'] = model_id  # Update model_id (in case it changes)
+
+    @staticmethod
+    def print_current(shared_state):
+        """Print current cumulative token usage with model information."""
+        token_usage = shared_state.get('token_usage', {})
+        if token_usage and token_usage.get('total_tokens', 0) > 0:
+            total_input = token_usage.get('total_input_tokens', 0)
+            total_output = token_usage.get('total_output_tokens', 0)
+            total = token_usage.get('total_tokens', 0)
+            cache_read = token_usage.get('cache_read_input_tokens', 0)
+            cache_write = token_usage.get('cache_write_input_tokens', 0)
+
+            # Get unique models used
+            by_agent = token_usage.get('by_agent', {})
+            models_used = set()
+            for agent_data in by_agent.values():
+                if 'model_id' in agent_data:
+                    models_used.add(agent_data['model_id'])
+
+            # Display breakdown showing total includes all token types
+            print(f"{TokenTracker.CYAN}>>> Cumulative Tokens (Total: {total:,}):{TokenTracker.END}")
+            if models_used:
+                print(f"{TokenTracker.CYAN}    Model(s): {', '.join(sorted(models_used))}{TokenTracker.END}")
+            print(f"{TokenTracker.CYAN}    Regular Input: {total_input:,} | Cache Read: {cache_read:,} (90% off) | Cache Write: {cache_write:,} (25% extra) | Output: {total_output:,}{TokenTracker.END}")
+
+    @staticmethod
+    def print_summary(shared_state):
+        """Print detailed token usage summary with model and agent breakdown."""
+        print("\n" + "="*60)
+        print("=== Token Usage Summary ===")
+        print("="*60)
+
+        token_usage = shared_state.get('token_usage', {})
+
+        if not token_usage or token_usage.get('total_tokens', 0) == 0:
+            print("No token usage data available")
+            print("="*60)
+            return
+
+        total_input = token_usage.get('total_input_tokens', 0)
+        total_output = token_usage.get('total_output_tokens', 0)
+        total = token_usage.get('total_tokens', 0)
+        cache_read = token_usage.get('cache_read_input_tokens', 0)
+        cache_write = token_usage.get('cache_write_input_tokens', 0)
+
+        # Get unique models used
+        by_agent = token_usage.get('by_agent', {})
+        models_used = set()
+        for agent_data in by_agent.values():
+            if 'model_id' in agent_data:
+                models_used.add(agent_data['model_id'])
+
+        print(f"\nTotal Tokens: {total:,}")
+        if models_used:
+            print(f"Model(s) Used: {', '.join(sorted(models_used))}")
+        print(f"  - Regular Input:  {total_input:>8,} (100% cost)")
+        print(f"  - Cache Read:     {cache_read:>8,} (10% cost - 90% discount)")
+        print(f"  - Cache Write:    {cache_write:>8,} (125% cost - 25% extra)")
+        print(f"  - Output:         {total_output:>8,}")
+
+        # Model Usage Summary - aggregate by model
+        if by_agent:
+            print("\n" + "-"*60)
+            print("Model Usage Summary (for cost calculation):")
+            print("-"*60)
+
+            # Aggregate tokens by model
+            model_usage = {}
+            for agent_name, usage in by_agent.items():
+                model_id = usage.get('model_id', 'unknown')
+                if model_id not in model_usage:
+                    model_usage[model_id] = {
+                        'input': 0,
+                        'output': 0,
+                        'cache_read': 0,
+                        'cache_write': 0,
+                        'agents': []
+                    }
+                model_usage[model_id]['input'] += usage.get('input', 0)
+                model_usage[model_id]['output'] += usage.get('output', 0)
+                model_usage[model_id]['cache_read'] += usage.get('cache_read', 0)
+                model_usage[model_id]['cache_write'] += usage.get('cache_write', 0)
+                model_usage[model_id]['agents'].append(agent_name)
+
+            # Display model usage
+            for model_id in sorted(model_usage.keys()):
+                usage = model_usage[model_id]
+                model_total = usage['input'] + usage['output'] + usage['cache_read'] + usage['cache_write']
+                agents_str = ', '.join(usage['agents'])
+
+                print(f"\n  [{model_id}]")
+                print(f"    Total: {model_total:,}")
+                print(f"    - Regular Input:  {usage['input']:>8,} (100% cost)")
+                print(f"    - Cache Read:     {usage['cache_read']:>8,} (10% cost - 90% discount)")
+                print(f"    - Cache Write:    {usage['cache_write']:>8,} (125% cost - 25% extra)")
+                print(f"    - Output:         {usage['output']:>8,}")
+                print(f"    Used by: {agents_str}")
+
+            print("\n" + "-"*60)
+            print("Token Usage by Agent:")
+            print("-"*60)
+
+            # Sort agents for consistent display
+            for agent_name in sorted(by_agent.keys()):
+                usage = by_agent[agent_name]
+                input_tokens = usage.get('input', 0)
+                output_tokens = usage.get('output', 0)
+                agent_cache_read = usage.get('cache_read', 0)
+                agent_cache_write = usage.get('cache_write', 0)
+                agent_total = input_tokens + output_tokens + agent_cache_read + agent_cache_write
+                model_id = usage.get('model_id', 'unknown')
+
+                print(f"\n  [{agent_name}] Total: {agent_total:,}")
+                print(f"    Model: {model_id}")
+                print(f"    - Regular Input:  {input_tokens:>8,} (100% cost)")
+                print(f"    - Cache Read:     {agent_cache_read:>8,} (10% cost - 90% discount)")
+                print(f"    - Cache Write:    {agent_cache_write:>8,} (125% cost - 25% extra)")
+                print(f"    - Output:         {output_tokens:>8,}")
+
+        print("="*60)

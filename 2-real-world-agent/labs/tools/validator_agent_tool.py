@@ -2,13 +2,15 @@ import logging
 import asyncio
 from typing import Any, Annotated, Dict, List
 from strands.types.tools import ToolResult, ToolUse
+from strands.tools.tools import PythonAgentTool
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
 from utils.common_utils import get_message_from_string
 import pandas as pd
 from datetime import datetime
 
-from tools import python_repl_tool, bash_tool
+from tools.python_repl_tool import python_repl_tool
+from tools.bash_tool import bash_tool
 from strands_tools import file_read
 
 from dotenv import load_dotenv
@@ -106,7 +108,7 @@ class OptimizedValidator:
         
         return priority_calcs, stats
 
-def handle_validator_agent_tool(_task: Annotated[str, "The validation task or instruction for validating calculations and generating citations."]):
+def _handle_validator_agent_tool(_task: Annotated[str, "The validation task or instruction for validating calculations and generating citations."]):
     """
     Validate numerical calculations and generate citation metadata for reports.
 
@@ -141,9 +143,10 @@ def handle_validator_agent_tool(_task: Annotated[str, "The validation task or in
     validator_agent = strands_utils.get_agent(
         agent_name="validator",
         system_prompts=apply_prompt_template(prompt_name="validator", prompt_context={"USER_REQUEST": request_prompt, "FULL_PLAN": full_plan}),
-        agent_type="claude-sonnet-4", # claude-sonnet-3-5-v-2, claude-sonnet-3-7
+        model_id="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
         enable_reasoning=False,
         prompt_cache_info=(True, "default"),  # reasoning agent uses prompt caching
+        tool_cache=False,
         tools=[python_repl_tool, bash_tool, file_read],
         streaming=True  # Enable streaming for consistency
     )
@@ -186,13 +189,13 @@ def handle_validator_agent_tool(_task: Annotated[str, "The validation task or in
     return result_text
 
 # Function name must match tool name
-def validator_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
+def _validator_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
     tool_use_id = tool["toolUseId"]
     task = tool["input"]["task"]
-    
+
     # Use the existing handle_validator_agent_tool function
-    result = handle_validator_agent_tool(task)
-    
+    result = _handle_validator_agent_tool(task)
+
     # Check if execution was successful based on the result string
     if "Error" in result:
         return {
@@ -206,3 +209,6 @@ def validator_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
             "status": "success",
             "content": [{"text": result}]
         }
+
+# Wrap with PythonAgentTool for proper Strands SDK registration
+validator_agent_tool = PythonAgentTool("validator_agent_tool", TOOL_SPEC, _validator_agent_tool)

@@ -2,16 +2,24 @@ import logging
 import asyncio
 from typing import Any, Annotated
 from strands.types.tools import ToolResult, ToolUse
+from strands.types.content import ContentBlock
+from strands.tools.tools import PythonAgentTool
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
 from utils.common_utils import get_message_from_string
-
-from tools import python_repl_tool, bash_tool
+from tools.bash_tool import bash_tool
+from tools.write_and_execute_tool import write_and_execute_tool
 from strands_tools import file_read
+from utils.strands_sdk_utils import TokenTracker
 
 # Simple logger setup
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+class Colors:
+    GREEN = '\033[92m'
+    CYAN = '\033[96m'
+    END = '\033[0m'
 
 TOOL_SPEC = {
     "name": "reporter_agent_tool",
@@ -38,7 +46,7 @@ class Colors:
     GREEN = '\033[92m'
     END = '\033[0m'
 
-def handle_reporter_agent_tool(_task: Annotated[str, "The reporting task or instruction for generating the report."]):
+def _handle_reporter_agent_tool(_task: Annotated[str, "The reporting task or instruction for generating the report."]):
     """
     Generate comprehensive reports based on analysis results using a specialized reporter agent.
 
@@ -73,15 +81,20 @@ def handle_reporter_agent_tool(_task: Annotated[str, "The reporting task or inst
     reporter_agent = strands_utils.get_agent(
         agent_name="reporter",
         system_prompts=apply_prompt_template(prompt_name="reporter", prompt_context={"USER_REQUEST": request_prompt, "FULL_PLAN": full_plan}),
-        agent_type="claude-sonnet-4-5", # claude-sonnet-3-5-v-2, claude-sonnet-3-7
+        model_id="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
         enable_reasoning=False,
-        prompt_cache_info=(True, "default"),  # reasoning agent uses prompt caching
-        tools=[python_repl_tool, bash_tool, file_read],
+        prompt_cache_info=(True, "default"), # reasoning agent uses prompt caching
+        tool_cache=True,
+        tools=[write_and_execute_tool, bash_tool, file_read],
         streaming=True  # Enable streaming for consistency
     )
 
     # Prepare message with context if available
     message = '\n\n'.join([messages[-1]["content"][-1]["text"], clues])
+
+    # Create message with cache point for messages caching
+    # This caches the large context (clues) for cost savings
+    message = [ContentBlock(text=message), ContentBlock(cachePoint={"type": "default"})]  # Cache point for messages caching
 
     # Process streaming response and collect text in one pass
     async def process_reporter_stream():
@@ -89,7 +102,10 @@ def handle_reporter_agent_tool(_task: Annotated[str, "The reporting task or inst
         async for event in strands_utils.process_streaming_response_yield(
             reporter_agent, message, agent_name="reporter", source="reporter_tool"
         ):
-            if event.get("event_type") == "text_chunk": full_text += event.get("data", "")
+            if event.get("event_type") == "text_chunk":
+                full_text += event.get("data", "")
+            # Accumulate token usage
+            TokenTracker.accumulate(event, shared_state)
         return {"text": full_text}
 
     response = asyncio.run(process_reporter_stream())
@@ -108,18 +124,20 @@ def handle_reporter_agent_tool(_task: Annotated[str, "The reporting task or inst
     shared_state['history'] = history
 
     logger.info(f"\n{Colors.GREEN}Reporter Agent Tool completed{Colors.END}")
+    # Print token usage using TokenTracker
+    TokenTracker.print_current(shared_state)
     return result_text
 
 # Function name must match tool name
-def reporter_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
+def _reporter_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
     tool_use_id = tool["toolUseId"]
     task = tool["input"]["task"]
-    
+
     # Use the existing handle_reporter_agent_tool function
-    result = handle_reporter_agent_tool(task)
-    
+    result = _handle_reporter_agent_tool(task)
+
     # Check if execution was successful based on the result string
-    if "Error in reporter agent tool" in result:
+    if "Error in reporter agent tool" in result or "Error: " in result:
         return {
             "toolUseId": tool_use_id,
             "status": "error",
@@ -131,3 +149,6 @@ def reporter_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
             "status": "success",
             "content": [{"text": result}]
         }
+
+# Wrap with PythonAgentTool for proper Strands SDK registration
+reporter_agent_tool = PythonAgentTool("reporter_agent_tool", TOOL_SPEC, _reporter_agent_tool)

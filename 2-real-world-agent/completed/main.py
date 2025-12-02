@@ -53,6 +53,14 @@ def _print_conversation_history():
     else:
         print("No conversation history found")
 
+def _print_token_usage_summary():
+    """Print final token usage statistics"""
+    from graph.nodes import _global_node_states
+    from utils.strands_sdk_utils import TokenTracker
+
+    shared_state = _global_node_states.get('shared', {})
+    TokenTracker.print_summary(shared_state)
+
 async def graph_streaming_execution(payload):
     """Execute full graph streaming workflow using new graph.stream_async method"""
 
@@ -80,8 +88,9 @@ async def graph_streaming_execution(payload):
     #########################
     ## modification END    ##
     #########################
-    
+
     _print_conversation_history()
+    _print_token_usage_summary()
     print("=== Queue-Only Event Stream Complete ===")
 
 if __name__ == "__main__":

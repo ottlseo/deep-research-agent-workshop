@@ -2,6 +2,7 @@ import logging
 import asyncio
 from typing import Any, Annotated
 from strands.types.tools import ToolResult, ToolUse
+from strands.tools.tools import PythonAgentTool
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
 from utils.common_utils import get_message_from_string
@@ -39,8 +40,8 @@ class Colors:
     BLUE = '\033[94m'
     END = '\033[0m'
 
-def handle_tracker_agent_tool(completed_agent: Annotated[str, "The name of the agent that just completed its task"], 
-                             completion_summary: Annotated[str, "Summary of what was completed by the agent"]):
+def _handle_tracker_agent_tool(completed_agent: Annotated[str, "The name of the agent that just completed its task"],
+                              completion_summary: Annotated[str, "Summary of what was completed by the agent"]):
     """
     Track and update task completion status based on agent results.
     
@@ -82,9 +83,10 @@ def handle_tracker_agent_tool(completed_agent: Annotated[str, "The name of the a
                 "FULL_PLAN": full_plan
             }
         ),
-        agent_type="claude-sonnet-4-5", # claude-sonnet-3-5-v-2, claude-sonnet-3-7
+        model_id="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
         enable_reasoning=False,
         prompt_cache_info=(True, "default"),  # reasoning agent uses prompt caching
+        tool_cache=False,
         tools=[],  # tracker doesn't need additional tools
         streaming=True
     )
@@ -132,14 +134,14 @@ def handle_tracker_agent_tool(completed_agent: Annotated[str, "The name of the a
     return result_text
 
 # Function name must match tool name
-def tracker_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
+def _tracker_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
     tool_use_id = tool["toolUseId"]
     completed_agent = tool["input"]["completed_agent"]
     completion_summary = tool["input"]["completion_summary"]
-    
+
     # Use the existing handle_tracker_agent_tool function
-    result = handle_tracker_agent_tool(completed_agent, completion_summary)
-    
+    result = _handle_tracker_agent_tool(completed_agent, completion_summary)
+
     # Check if execution was successful based on the result string
     if "Error" in result:
         return {
@@ -153,3 +155,6 @@ def tracker_agent_tool(tool: ToolUse, **_kwargs: Any) -> ToolResult:
             "status": "success",
             "content": [{"text": result}]
         }
+
+# Wrap with PythonAgentTool for proper Strands SDK registration
+tracker_agent_tool = PythonAgentTool("tracker_agent_tool", TOOL_SPEC, _tracker_agent_tool)
