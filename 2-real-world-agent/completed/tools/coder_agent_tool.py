@@ -16,11 +16,6 @@ from utils.strands_sdk_utils import TokenTracker
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-class Colors:
-    GREEN = '\033[92m'
-    CYAN = '\033[96m'
-    END = '\033[0m'
-
 TOOL_SPEC = {
     "name": "coder_agent_tool",
     "description": "Execute Python code and bash commands using a specialized coder agent. This tool provides access to a coder agent that can execute Python code for data analysis and calculations, run bash commands for system operations, and handle complex programming tasks.",

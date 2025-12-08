@@ -239,3 +239,6 @@ __marimo__/
 # Temporary test files
 test_*.py
 *_test.py
+
+# Claude
+.claude

@@ -1,6 +1,3 @@
-
-
-
 """
 Entry point script for the Strands Agent Demo.
 """
@@ -32,7 +29,7 @@ def remove_artifact_folder(folder_path="./artifacts/"):
             print(f"'{folder_path}' 폴더가 성공적으로 삭제되었습니다.")
         except Exception as e: print(f"오류 발생: {e}")
     else:
-        print(f"'{folder_path}' 폴더가 존재하지 않습니다.")
+        print(f"'{folder_path}' 폴더가 존재하지 않습니다. 생성하겠습니다.")
 
 def _setup_execution():
     """Initialize execution environment"""
