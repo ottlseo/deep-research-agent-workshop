@@ -50,7 +50,7 @@ class ColoredStreamingCallback(StreamingStdOutCallbackHandler):
         print(f"{self.color_code}{token}{self.reset_code}", end="", flush=True)
 
 # Wrap agent with StreamableAgent for queue-based streaming (Agent as a tool 사용할 경우, tool response 또한 스트리밍 하기 위해서)
-# Graph를 사용한다면 에이전트 마다 StreamableAgent를 감싸면 안된다. 그래프는 그래프 완성 후 StreamableGprah로 래핑함.
+# Graph를 사용한다면 에이전트 마다 StreamableAgent를 감싸면 안된다. 그래프는 그래프 완성 후 StreamableGprah로 래핑함. 
 class StreamableAgent:
     """Agent wrapper that adds streaming capability with event queue pattern."""
 
@@ -145,11 +145,13 @@ class strands_utils():
         tool_cache = kwargs["tool_cache"]
 
         ## BedrockModel params: https://strandsagents.com/latest/api-reference/models/?h=bedrockmodel#strands.models.bedrock.BedrockModel
+        # max_tokens: Claude 3.5/4 models support up to 8192 output tokens by default, extended to 64K for Sonnet
+        # Increased from 8192*5 (40,960) to 8192*8 (65,536) to prevent MaxTokensReachedException
         llm = BedrockModel(
             model_id=model_id,
             streaming=True,
             cache_tools="default" if tool_cache else None,
-            max_tokens=8192*5,
+            max_tokens=64000,
             stop_sequences=["\n\nHuman"],
             temperature=1 if enable_reasoning else 0.01,
             additional_request_fields={
@@ -197,7 +199,7 @@ class strands_utils():
             # If caching is disabled, pass the string as-is
             logger.info(f"{Colors.GREEN}{agent_name.upper()} - Prompt Cache Disabled{Colors.END}")
             system_prompt_with_cache = system_prompts
-
+        
         if tool_cache: logger.info(f"{Colors.GREEN}{agent_name.upper()} - Tool Cache Enabled{Colors.END}")
         else: logger.info(f"{Colors.GREEN}{agent_name.upper()} - Tool Cache Disabled{Colors.END}")
 
@@ -504,8 +506,6 @@ class strands_utils():
         callback_reasoning = ColoredStreamingCallback('cyan')        
         callback_tool = ColoredStreamingCallback('yellow')
 
-        #print ("event", event)
-
         if event:
             if event.get("event_type") == "text_chunk":
                 callback_default.on_llm_new_token(event.get('data', ''))
@@ -542,7 +542,7 @@ class strands_utils():
                     # file_read 결과는 보통 길어서 앞부분만 표시
                     truncated_output = output[:500] + "..." if len(output) > 500 else output
                     callback_tool.on_llm_new_token(f"File content preview:\n{truncated_output}\n")
-
+                
                 elif tool_name == "rag_tool":
                     callback_tool.on_llm_new_token(f"rag response:\n{output}\n")
 

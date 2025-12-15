@@ -1,9 +1,11 @@
 import logging
+import os
 import asyncio
 from typing import Any, Annotated
 from strands.types.tools import ToolResult, ToolUse
-from strands.types.content import ContentBlock
 from strands.tools.tools import PythonAgentTool
+from strands.types.content import ContentBlock
+from dotenv import load_dotenv
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
 from utils.common_utils import get_message_from_string
@@ -11,6 +13,8 @@ from tools.bash_tool import bash_tool
 from tools.write_and_execute_tool import write_and_execute_tool
 from strands_tools import file_read
 from utils.strands_sdk_utils import TokenTracker
+
+load_dotenv()
 
 # Simple logger setup
 logger = logging.getLogger(__name__)
@@ -75,7 +79,7 @@ def _handle_coder_agent_tool(task: Annotated[str, "The coding task or question t
     coder_agent = strands_utils.get_agent(
         agent_name="coder",
         system_prompts=apply_prompt_template(prompt_name="coder", prompt_context={"USER_REQUEST": request_prompt, "FULL_PLAN": full_plan}),
-        model_id="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        model_id=os.getenv("CODER_MODEL_ID", os.getenv("DEFAULT_MODEL_ID")),
         enable_reasoning=False,
         prompt_cache_info=(True, "default"),  # reasoning agent uses prompt caching
         tool_cache=True,

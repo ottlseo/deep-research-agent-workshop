@@ -138,6 +138,9 @@ celerybeat.pid
 .env
 .env.local
 .env.*.local
+# Allow .env in completed and labs directories for workshop
+!2-real-world-agent/completed/.env
+!2-real-world-agent/labs/.env
 .envrc
 .venv
 env/

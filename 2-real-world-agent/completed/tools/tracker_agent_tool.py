@@ -1,12 +1,16 @@
 import logging
+import os
 import asyncio
 from typing import Any, Annotated
 from strands.types.tools import ToolResult, ToolUse
 from strands.tools.tools import PythonAgentTool
+from dotenv import load_dotenv
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
 from utils.common_utils import get_message_from_string
 from utils.strands_sdk_utils import TokenTracker
+
+load_dotenv()
 
 # Simple logger setup
 logger = logging.getLogger(__name__)
@@ -29,7 +33,7 @@ TOOL_SPEC = {
                     "description": "The name of the agent that just completed its task (e.g., 'coder', 'reporter')."
                 },
                 "completion_summary": {
-                    "type": "string",
+                    "type": "string", 
                     "description": "Summary of what was completed by the agent to help identify which tasks to mark as done."
                 }
             },
@@ -50,35 +54,35 @@ def _handle_tracker_agent_tool(completed_agent: Annotated[str, "The name of the 
                               completion_summary: Annotated[str, "Summary of what was completed by the agent"]):
     """
     Track and update task completion status based on agent results.
-
+    
     This tool provides access to a tracker agent that can:
     - Monitor task progress and update completion status
     - Update checklists from [ ] to [x] format
     - Maintain accurate task tracking
-
+    
     Args:
         completed_agent: The name of the agent that just completed its task
         completion_summary: Summary of what was completed by the agent
-
+        
     Returns:
         Updated task tracking status
     """
     print()  # Add newline before log
     logger.info(f"\n{Colors.GREEN}Tracker Agent Tool starting{Colors.END}")
-
+    
     # Try to extract shared state from global storage
     from graph.nodes import _global_node_states
     shared_state = _global_node_states.get('shared', None)
-
+    
     if not shared_state:
         logger.warning("No shared state found")
-        return "Error: No shared state available"
-
+        return "Error: No shared state available" 
+                    
     request_prompt = shared_state.get("request_prompt", "")
     full_plan = shared_state.get("full_plan", "")
     clues = shared_state.get("clues", "")
     messages = shared_state.get("messages", [])
-
+    
     # Create tracker agent - uses reasoning LLM like planner and supervisor
     tracker_agent = strands_utils.get_agent(
         agent_name="tracker",
@@ -89,14 +93,14 @@ def _handle_tracker_agent_tool(completed_agent: Annotated[str, "The name of the 
                 "FULL_PLAN": full_plan
             }
         ),
-        model_id="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        model_id=os.getenv("TRACKER_MODEL_ID", os.getenv("DEFAULT_MODEL_ID")),
         enable_reasoning=False,
         prompt_cache_info=(False, None),  # reasoning agent uses prompt caching
         tool_cache=False,
         tools=[],  # tracker doesn't need additional tools
         streaming=True
     )
-
+    
     # Prepare tracking message with context
     tracking_message = f"Agent '{completed_agent}' has completed its task. Here's what was accomplished:\n\n{completion_summary}\n\nPlease update the task completion status accordingly."
 
@@ -114,28 +118,28 @@ def _handle_tracker_agent_tool(completed_agent: Annotated[str, "The name of the 
             # Accumulate token usage
             TokenTracker.accumulate(event, shared_state)
         return {"text": full_text}
-
+    
     response = asyncio.run(process_tracker_stream())
-
+    
     result_text = response['text']
-
+    
     # Update clues with tracking information
     clues = '\n\n'.join([clues, CLUES_FORMAT.format(response["text"])])
-
+    
     # Update history
     history = shared_state.get("history", [])
     history.append({"agent": "tracker", "message": response["text"]})
-
+    
     # Update shared state with tracking results
     shared_state['messages'] = [get_message_from_string(role="user", string=RESPONSE_FORMAT.format("tracker", response["text"]), imgs=[])]
     shared_state['clues'] = clues
     shared_state['history'] = history
-
+    
     # Update the full_plan with the tracked version if the response contains an updated plan
     if "# Plan" in response["text"]:
         shared_state['full_plan'] = response["text"]
         logger.info(f"{Colors.BLUE}Updated full_plan with tracking results{Colors.END}")
-
+    
     logger.info(f"\n{Colors.GREEN}Tracker Agent Tool completed{Colors.END}")
     # Print token usage using TokenTracker
     TokenTracker.print_current(shared_state)

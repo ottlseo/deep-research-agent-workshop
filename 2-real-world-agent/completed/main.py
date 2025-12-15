@@ -1,3 +1,4 @@
+
 """
 Entry point script for the Strands Agent Demo.
 """
@@ -5,6 +6,7 @@ import os
 import shutil
 import asyncio
 import argparse
+import textwrap
 from dotenv import load_dotenv
 from utils.strands_sdk_utils import strands_utils
 from graph.builder import build_graph
@@ -17,7 +19,7 @@ from utils.event_queue import clear_queue
 
 def remove_artifact_folder(folder_path="./artifacts/"):
     """
-    ./artifact/ 폴더가 존재하면 삭제하는 함수
+    ./artifhowact/ 폴더가 존재하면 삭제하는 함수
 
     Args:
         folder_path (str): 삭제할 폴더 경로
@@ -29,7 +31,7 @@ def remove_artifact_folder(folder_path="./artifacts/"):
             print(f"'{folder_path}' 폴더가 성공적으로 삭제되었습니다.")
         except Exception as e: print(f"오류 발생: {e}")
     else:
-        print(f"'{folder_path}' 폴더가 존재하지 않습니다. 생성하겠습니다.")
+        print(f"'{folder_path}' 폴더가 존재하지 않습니다.")
 
 def _setup_execution():
     """Initialize execution environment"""
@@ -85,7 +87,7 @@ async def graph_streaming_execution(payload):
     #########################
     ## modification END    ##
     #########################
-
+    
     _print_conversation_history()
     _print_token_usage_summary()
     print("=== Queue-Only Event Stream Complete ===")
@@ -106,19 +108,16 @@ if __name__ == "__main__":
         payload = {
             "user_query": args.user_query,
         }
-    else:
+    else: #             "user_query": "너가 작성할 것은 moon market 의 판매 현황 보고서야. 세일즈 및 마케팅 관점으로 분석을 해주고, 차트 생성 및 인사이트도 뽑아서 docx 파일로 만들어줘. 분석대상은 './data/moon-market-fresh-food-sales.csv' 파일 입니다."
         # Full comprehensive analysis query (main version):
+        user_query =textwrap.dedent("""
+                세일즈 및 마케팅 관점으로 분석을 해주고, 차트 생성 및 인사이트도 뽑아서 docx 파일로 만들어줘. 
+                분석대상은 ‘./data/moon_market/kr/’ 디렉토리 입니다.
+                moon-market-fresh-food-sales.csv 는 분석 파일이고,
+                column_definitions.json은 컬럼에 대한 설명입니다.
+            """).strip()
         payload = {
-            "user_query": """
-                            나는 Yummy food의 마케팅 담당자야. 우리회사에서 만든 식품을 여러 매체에 광고하고 있어. 데이터의 종류는 소비자 구매 이력이 있는 데이터, 매체별 광고 데이터야.
-                            소비자 구매 패턴과 함께 소비자 분석, 광고 분석 보고서를 docx로 작성해줘.
-
-                            보고서를 작성할 때는 다음 내용들을 포함해서 작성해.
-                            1/ 우리회사에서 만든 식품을 여러 매체에 광고하고 있어. 우리 상품에 대한 분석을 하고 소비자 분석을 하고 싶어. 
-                            2/ 광고 매출에 대한 인사이트는 보고서의 맨 앞에 \"x억원의 광고 집행 예산을 4개의 매체(예: 아마존, 컬리, 네이버, 쿠팡)에 n일동안 카테고리(신선식품, 간편식, 건강식품)에 대하여 광고를 집행한 결과입니다. 종합해보면..\"과 같은 개요를 작성해줘. 
-                            3/ 어떤 상품이 어떤 소비자에게 인기가 있었는지도 분석해줘. 
-                            4/ 통합 분석한 내용을 docx 리포트로 작성해줘. 분석대상은 './2-real-world-agent/completed/data/*' 파일 이야.
-                        """
+            "user_query": user_query
         }
 
     #########################

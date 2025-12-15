@@ -1,9 +1,11 @@
 import logging
+import os
 import asyncio
 from typing import Any, Annotated, Dict, List
 from strands.types.tools import ToolResult, ToolUse
-from strands.types.content import ContentBlock
 from strands.tools.tools import PythonAgentTool
+from strands.types.content import ContentBlock
+from dotenv import load_dotenv
 from utils.strands_sdk_utils import strands_utils
 from prompts.template import apply_prompt_template
 from utils.common_utils import get_message_from_string
@@ -13,6 +15,8 @@ from utils.strands_sdk_utils import TokenTracker
 from tools.bash_tool import bash_tool
 from tools.write_and_execute_tool import write_and_execute_tool
 from strands_tools import file_read
+
+load_dotenv()
 
 # Simple logger setup
 logger = logging.getLogger(__name__)
@@ -52,11 +56,11 @@ class OptimizedValidator:
     """
     Performance-optimized validator for large datasets with many calculations
     """
-
+    
     def __init__(self):
         self.data_cache: Dict[str, pd.DataFrame] = {}
         self.validation_results = {}
-
+        
     def load_data_once(self, file_path: str) -> pd.DataFrame:
         """Cache data loading to avoid repeated I/O operations"""
         if file_path not in self.data_cache:
@@ -69,13 +73,13 @@ class OptimizedValidator:
                 else:
                     # Try CSV as default
                     self.data_cache[file_path] = pd.read_csv(file_path)
-
+                    
                 logger.info(f"✅ Loaded {len(self.data_cache[file_path])} rows from {file_path}")
             except Exception as e:
                 logger.error(f"❌ Failed to load data from {file_path}: {e}")
                 raise
         return self.data_cache[file_path]
-
+    
     def filter_calculations_by_priority(self, calculations: List[Dict]) -> tuple:
         """
         Filter calculations by importance to optimize processing time
@@ -84,10 +88,10 @@ class OptimizedValidator:
         high_priority = [calc for calc in calculations if calc.get('importance') == 'high']
         medium_priority = [calc for calc in calculations if calc.get('importance') == 'medium']
         low_priority = [calc for calc in calculations if calc.get('importance') == 'low']
-
+        
         # Performance optimization: limit processing based on total count
         total_calcs = len(calculations)
-
+        
         if total_calcs > 50:
             # For large datasets, prioritize aggressively
             priority_calcs = high_priority + medium_priority[:min(10, len(medium_priority))]
@@ -100,7 +104,7 @@ class OptimizedValidator:
             # Small datasets, validate most calculations
             priority_calcs = high_priority + medium_priority + low_priority[:5]
             logger.info(f"🔧 Small dataset detected ({total_calcs} calculations). Validating most calculations.")
-
+        
         stats = {
             'total': total_calcs,
             'high': len(high_priority),
@@ -108,7 +112,7 @@ class OptimizedValidator:
             'low': len(low_priority),
             'selected': len(priority_calcs)
         }
-
+        
         return priority_calcs, stats
 
 def _handle_validator_agent_tool(_task: Annotated[str, "The validation task or instruction for validating calculations and generating citations."]):
@@ -146,7 +150,7 @@ def _handle_validator_agent_tool(_task: Annotated[str, "The validation task or i
     validator_agent = strands_utils.get_agent(
         agent_name="validator",
         system_prompts=apply_prompt_template(prompt_name="validator", prompt_context={"USER_REQUEST": request_prompt, "FULL_PLAN": full_plan}),
-        model_id="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        model_id=os.getenv("VALIDATOR_MODEL_ID", os.getenv("DEFAULT_MODEL_ID")),
         enable_reasoning=False,
         prompt_cache_info=(False, None), # reasoning agent uses prompt caching
         tool_cache=False,
