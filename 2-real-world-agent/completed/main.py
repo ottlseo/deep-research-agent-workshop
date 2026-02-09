@@ -108,14 +108,16 @@ if __name__ == "__main__":
         payload = {
             "user_query": args.user_query,
         }
-    else: #             "user_query": "너가 작성할 것은 moon market 의 판매 현황 보고서야. 세일즈 및 마케팅 관점으로 분석을 해주고, 차트 생성 및 인사이트도 뽑아서 docx 파일로 만들어줘. 분석대상은 './data/moon-market-fresh-food-sales.csv' 파일 입니다."
-        # Full comprehensive analysis query (main version):
+    else: 
         user_query =textwrap.dedent("""
                 세일즈 및 마케팅 관점으로 분석을 해주고, 차트 생성 및 인사이트도 뽑아서 docx 파일로 만들어줘. 
-                분석대상은 ‘./data/moon_market/kr/’ 디렉토리 입니다.
-                moon-market-fresh-food-sales.csv 는 분석 파일이고,
+                분석대상은 ‘./data/yummy_food/’ 디렉토리 입니다.
+                yummy-food-market.csv 는 분석 파일이고,
                 column_definitions.json은 컬럼에 대한 설명입니다.
             """).strip()
+        
+        # "user_query": "너가 작성할 것은 moon market 의 판매 현황 보고서야. 세일즈 및 마케팅 관점으로 분석을 해주고, 차트 생성 및 인사이트도 뽑아서 docx 파일로 만들어줘. 분석대상은 './data/moon-market/kr/*' 입니다."
+
         payload = {
             "user_query": user_query
         }
